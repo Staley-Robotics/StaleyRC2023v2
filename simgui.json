@@ -1,0 +1,85 @@
+{
+  "HALProvider": {
+    "Other Devices": {
+      "CANCoder[12]": {
+        "header": {
+          "open": true
+        }
+      }
+    },
+    "RoboRIO": {
+      "6V Rail": {
+        "open": false
+      }
+    },
+    "Solenoids": {
+      "0": {
+        "header": {
+          "open": true
+        }
+      },
+      "window": {
+        "visible": true
+      }
+    }
+  },
+  "NTProvider": {
+    "types": {
+      "/FMSInfo": "FMSInfo",
+      "/LiveWindow/Arm/Extend": "Motor Controller",
+      "/LiveWindow/Arm/Pivot": "Motor Controller",
+      "/LiveWindow/ArmExtend/Extend": "Motor Controller",
+      "/LiveWindow/ArmPivot/PivotMotor": "Motor Controller",
+      "/LiveWindow/SwerveDrive/FrontLeft": "Subsystem",
+      "/LiveWindow/SwerveDrive/Gyro": "Gyro",
+      "/LiveWindow/SwerveModule/BackLeft/Angle": "Motor Controller",
+      "/LiveWindow/SwerveModule/BackLeft/Drive": "Motor Controller",
+      "/LiveWindow/SwerveModule/BackRight/Angle": "Motor Controller",
+      "/LiveWindow/SwerveModule/BackRight/Drive": "Motor Controller",
+      "/LiveWindow/SwerveModule/FrontLeft/Angle": "Motor Controller",
+      "/LiveWindow/SwerveModule/FrontLeft/Drive": "Motor Controller",
+      "/LiveWindow/SwerveModule/FrontRight/Angle": "Motor Controller",
+      "/LiveWindow/SwerveModule/FrontRight/Drive": "Motor Controller",
+      "/LiveWindow/Ungrouped/Angle": "Motor Controller",
+      "/LiveWindow/Ungrouped/Drive": "Motor Controller",
+      "/LiveWindow/Ungrouped/PID Controller": "PIDController",
+      "/LiveWindow/Ungrouped/Talon FX [9]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon SRX [31]": "Motor Controller",
+      "/LiveWindow/Ungrouped/class frc2::SubsystemBase": "Subsystem",
+      "/SmartDashboard/Arm": "Subsystem",
+      "/SmartDashboard/Auto Mode": "String Chooser",
+      "/SmartDashboard/Claw": "Subsystem",
+      "/SmartDashboard/DriveSCurve": "Command",
+      "/SmartDashboard/Field": "Field2d",
+      "/SmartDashboard/Lockdown": "Command",
+      "/SmartDashboard/Pneumatics": "Subsystem",
+      "/SmartDashboard/SCurve": "Command",
+      "/SmartDashboard/SD-Arm": "Subsystem",
+      "/SmartDashboard/SD-Claw": "Subsystem",
+      "/SmartDashboard/SD-Pneumatics": "Subsystem",
+      "/SmartDashboard/SD-SwerveDrive": "Subsystem",
+      "/SmartDashboard/SwerveDrive": "Subsystem"
+    }
+  },
+  "NetworkTables": {
+    "transitory": {
+      "LiveWindow": {
+        "Claw": {
+          "open": true
+        },
+        "open": true
+      },
+      "SmartDashboard": {
+        "Auto Choices": {
+          "open": false
+        },
+        "open": true
+      }
+    }
+  },
+  "NetworkTables Info": {
+    "Server": {
+      "open": true
+    }
+  }
+}
