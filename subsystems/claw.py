@@ -1,13 +1,13 @@
-#######################################################
-# Description: CTRE Pneumatics Compressor Control System
-# Version:  1
-# Date:  2023-10-03
-#
-# Dependencies:
-# - None
-#
-# CAN Network:  Default
-#######################################################
+"""
+Description: CTRE Pneumatics Compressor Control System
+Version:  1
+Date:  2023-10-03
+
+Dependencies:
+- None
+
+CAN Network:  Default
+"""
 
 ### Imports
 # Python Imports

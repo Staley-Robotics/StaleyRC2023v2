@@ -19,6 +19,7 @@ class RobotContainer:
     armPivot = ArmPivot()
     armExtend = ArmExtend()
     claw = Claw()
+    pdp = PowerDistPanel()
 
     # Controllers
     driver1 = commands2.button.CommandXboxController(0)
@@ -36,19 +37,28 @@ class RobotContainer:
             'clawToggle': ClawAction(self.claw, ClawAction.Action.kToggle),
             'halfspeed': ToggleHalfSpeed(self.swerveDrive),
             'fieldrelative': ToggleFieldRelative(self.swerveDrive),
-            'motionmagic': ToggleMotionMagic(self.swerveDrive)
+            'motionmagic': ToggleMotionMagic(self.swerveDrive),
+            'arm-pivot-max': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMax),
+            'arm-pivot-min': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMin),
+            'arm-pivot-up': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kNext),
+            'arm-pivot-down': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kPrev)
         } )
 
 
         # SmartDashboard Subsystems
         SmartDashboard.putData(key="SwerveDrive", data=self.swerveDrive)
         SmartDashboard.putData(key="Pneumatics",  data=self.pneumatics)
-        SmartDashboard.putData(key="Arm",         data=self.armPivot)
+        SmartDashboard.putData(key="ArmPivot",    data=self.armPivot)
+        SmartDashboard.putData(key="ArmExtend",   data=self.armExtend)
         SmartDashboard.putData(key="Claw",        data=self.claw)
 
         # SmartDashboard Commands
         SmartDashboard.putData(key="SCurve", data=self.cmds['scurve']) #SCurve(self.swerveDrive)
         SmartDashboard.putData(key="Lockdown", data=self.cmds['lockdown']) #DriveLockdown(self.swerveDrive))
+        SmartDashboard.putData(key="ArmPivot-Max", data=self.cmds['arm-pivot-max'])
+        SmartDashboard.putData(key="ArmPivot-Min", data=self.cmds['arm-pivot-min'])
+        SmartDashboard.putData(key="ArmPivot-Up", data=self.cmds['arm-pivot-up'])
+        SmartDashboard.putData(key="ArmPivot-Down", data=self.cmds['arm-pivot-down'])
 
         # Configure Default Commands
         self.configureDefaultCommands()
@@ -78,13 +88,13 @@ class RobotContainer:
         )
         # Arm by Joystick
         self.armPivot.setDefaultCommand(
-            ArmByStick(
+            ArmPivotByStick(
                 self.armPivot,
                 lambda: -self.getDriver2().getLeftY()
             )
         )
         self.armExtend.setDefaultCommand(
-            ArmByStick(
+            ArmExtendByStick(
                 self.armExtend,
                 lambda: -self.getDriver2().getRightY()
             )

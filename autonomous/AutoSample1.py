@@ -2,7 +2,7 @@
 import math
 
 # Import FRC
-from commands2 import CommandBase, CommandGroupBase, Swerve4ControllerCommand, SequentialCommandGroup
+from commands2 import CommandBase, CommandGroupBase, Swerve4ControllerCommand, SequentialCommandGroup, ParallelCommandGroup
 import commands2.cmd
 from wpimath.controller import PIDController, ProfiledPIDController, ProfiledPIDControllerRadians
 from wpimath.geometry import Translation2d
@@ -11,6 +11,7 @@ from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator, TrapezoidP
 # Import Subsystems and Commands
 from subsystems import *
 from sequences.SCurve import SCurve
+from commands import ArmExtendByStick, ArmPivotByStick
 
 
 class AutoSample1(SequentialCommandGroup):
@@ -22,7 +23,14 @@ class AutoSample1(SequentialCommandGroup):
         self.addCommands( SCurve(swerveDrive) )
         self.addCommands( swerveDrive.stop() )
         self.addCommands( commands2.cmd.wait( 2.0 ) )
+        #self.addCommands(
+        #    ParallelCommandGroup(
+        #        ArmExtendByStick(),
+        #        ArmPivotByStick()
+        #    )
+        #)
         self.addCommands( SCurve(swerveDrive) )
         self.addCommands( swerveDrive.stop() )
         self.addCommands( commands2.cmd.wait( 15.0 ) )
+
 

@@ -19,6 +19,7 @@ import math
 from commands2 import SubsystemBase, PIDSubsystem
 from ctre import WPI_TalonFX, ControlMode, FeedbackDevice, RemoteFeedbackDevice, NeutralMode
 from ctre.sensors import WPI_CANCoder, SensorInitializationStrategy, AbsoluteSensorRange
+from wpilib import RobotBase, RobotState
 from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
 from wpimath.geometry import Translation2d, Rotation2d
 from wpimath.filter import SlewRateLimiter
@@ -42,10 +43,15 @@ drive_kF = 0.065
 drive_mmMaxVelocity = 2048
 drive_mmMaxAcceleration = 2048
 drive_mmSCurveSmoothing = 0
+
 angle_kP = 0.5
 angle_kI = 0
 angle_kD = 0
 angle_kF = 0
+angle_mmMaxVelocity = 2048
+angle_mmMaxAcceleration = 2048
+angle_mmSCurveSmoothing = 0
+
 
 # Class: SwerveModule
 class SwerveModule(SubsystemBase):
@@ -56,6 +62,7 @@ class SwerveModule(SubsystemBase):
     angleSensor:WPI_CANCoder = None
 
     modulePosition:Translation2d = None
+    moduleState:SwerveModuleState = None
 
     def __init__(self, subsystemName, driveId, angleId, sensorId, posX, posY, angleOffset):
         super().__init__()
@@ -66,6 +73,7 @@ class SwerveModule(SubsystemBase):
         self.angleSensor.configSensorInitializationStrategy(SensorInitializationStrategy.BootToZero)
         self.angleSensor.configAbsoluteSensorRange(AbsoluteSensorRange.Unsigned_0_to_360)
         self.angleSensor.configSensorDirection(False)
+        self.angleSensor.configSensorInitializationStrategy
         self.angleSensor.setPosition(self.angleSensor.getAbsolutePosition() - angleOffset)
 
         # Angle Motor
@@ -111,38 +119,59 @@ class SwerveModule(SubsystemBase):
         self.driveMotor.selectProfileSlot(1, 0)
 
         # Drive Integrated PID - Motion Magic Properties
+        self.angleMotor.configMotionCruiseVelocity( angle_mmMaxVelocity )
+        self.angleMotor.configMotionAcceleration( angle_mmMaxAcceleration )
+        self.angleMotor.configMotionSCurveStrength( angle_mmSCurveSmoothing )
+
+        # Drive Integrated PID - Motion Magic Properties
         self.driveMotor.configMotionCruiseVelocity( drive_mmMaxVelocity )
         self.driveMotor.configMotionAcceleration( drive_mmMaxAcceleration )
         self.driveMotor.configMotionSCurveStrength( drive_mmSCurveSmoothing )
 
         # Module Position
         self.modulePosition = Translation2d( posX, posY )
+        
+        # Module State
+        self.moduleState = SwerveModuleState( 0, Rotation2d(0) )
 
         # Slew Rate Limiter (manages gradual increase and decreases in speed)
         self.driveSRL = SlewRateLimiter( slewratesteps )
 
+    def periodic(self) -> None:
+        # Only Run Code During Enabled Mode
+        if RobotState.isDisabled(): return
+
+        # Velocity Calculate
+        velocity = self.moduleState.speed
+        velocityTp100ms = getVelocityMpsToTp100ms(velocity, driveMotorTicks, wheelRadius, driveGearRatio ) # Get Velocity in Ticks per 100 ms
+        # Set Velocity
+        self.driveMotor.set( ControlMode.Velocity, velocityTp100ms )
+
+        # Angle Position Calculate
+        position = self.moduleState.angle
+        positionTicks = getTicksFromRotation(position, angleSensorTicks)  # Get Optomized Target as Ticks
+        positionTicks = getContinuousInputMeasurement(position.degrees(), positionTicks, angleSensorTicks)  # Correction for [-180,180)
+        # Set Angle Position
+        if self.motionMagic:
+            self.angleMotor.set( ControlMode.MotionMagic, positionTicks )
+        else:
+            self.angleMotor.set( ControlMode.Position, positionTicks )
+
     def setDesiredState(self, desiredState:SwerveModuleState):
         ### Calculate / Optomize
-        angleCurrentPosition = self.angleMotor.getSelectedSensorPosition(0)
-        angleCurrentRotation = Rotation2d( value=(angleCurrentPosition * 2 * math.pi / angleSensorTicks) )
-        optimalState: SwerveModuleState = SwerveModuleState.optimize(
+        #angleCurrentPosition = self.angleMotor.getSelectedSensorPosition(0)
+        #angleCurrentRotation = Rotation2d( value=(angleCurrentPosition * 2 * math.pi / angleSensorTicks) )
+        #optimalState: SwerveModuleState = SwerveModuleState.optimize(
+        #    desiredState,
+        #    angleCurrentRotation
+        #)
+        currentAnglePosition = self.angleSensor.getPosition()
+        currentAngleRotation = Rotation2d(0).fromDegrees(currentAnglePosition)
+        optimalState:SwerveModuleState = SwerveModuleState.optimize(
             desiredState,
-            angleCurrentRotation
+            currentAngleRotation
         )
-
-        ### Drive Motor
-        osTp100ms = getVelocityMpsToTp100ms(optimalState.speed, driveMotorTicks, wheelRadius, driveGearRatio ) # Get Velocity in Ticks per 100 ms
-        osTp100ms = self.driveSRL.calculate(osTp100ms)  #Slew Rate Limiter
-        if self.motionMagic:
-            self.driveMotor.set( ControlMode.MotionMagic, osTp100ms ) # Motion Magic Closed Loop
-        else:
-            self.driveMotor.set( ControlMode.Velocity, osTp100ms ) # Set Closed Loop Velocity
-
-        ### Angle Motor
-        # Get Target Position
-        osTicks = getTicksFromRotation(optimalState.angle, angleSensorTicks)  # Get Optomized Target as Ticks
-        osTicks = getContinuousInputMeasurement(angleCurrentPosition, osTicks, angleSensorTicks)  # Correction for [-180,180)
-        self.angleMotor.set( ControlMode.Position, osTicks ) # Set Closed Loop Angle
+        self.moduleState = optimalState
 
     def getModulePosition(self) -> Translation2d:
         return self.modulePosition
@@ -150,8 +179,8 @@ class SwerveModule(SubsystemBase):
     def getPosition(self) -> SwerveModulePosition:
         dPosition = self.driveMotor.getSelectedSensorPosition(0)
         driveMeters = getDistanceTicksToMeters(dPosition, driveMotorTicks, wheelRadius,driveGearRatio)
-        rPosition = self.angleMotor.getSelectedSensorPosition(0)  ## Should we use self.angleSensor ??
-        rotatePosition = getRotationFromTicks(rPosition, angleSensorTicks)
+        rPosition = self.angleSensor.getPosition()  ## Should we use self.angleSensor ??
+        rotatePosition = Rotation2d(0).fromDegrees(rPosition)
 
         return SwerveModulePosition(
             distance=driveMeters,

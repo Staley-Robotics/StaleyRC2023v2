@@ -18,7 +18,7 @@ class ClawAction(CommandBase):
 
     def __init__(self, claw:Claw, action:int):
         super().__init__()
-        self.setName( "ArmAction" )
+        self.setName( "ClawAction" )
         
         self.ClawSubsystem = claw
         self.addRequirements( [self.ClawSubsystem] )

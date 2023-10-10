@@ -1,31 +1,34 @@
-#######################################################
-# Description: 4 Wheel Swerve Drive Chassis
-# Version:  2
-# Date:  2023-10-04
-#
-# Dependencies:
-# - SwerveModule:  SwerveModule_2023_v1
-#
-# CAN Network:  CANIVORE
-# Gyroscope:  PIGEON v2
-# Cameras:  limelight-one, limelight-two
-#######################################################
+"""
+Description: 4 Wheel Swerve Drive Chassis
+Version:  2
+Date:  2023-10-04
+
+Dependencies:
+- SwerveModule:  SwerveModule_2023
+
+CAN Network:  CANIVORE
+Gyroscope:  PIGEON v2
+Cameras:  limelight-one, limelight-two
+"""
 
 ### Imports
 # Python Imports
 import typing
+import math
 
 # FRC Component Imports
 from commands2 import SubsystemBase, CommandBase
 from ctre.sensors import WPI_Pigeon2
-from wpilib import SmartDashboard, Timer, DriverStation, RobotBase
+from wpilib import SmartDashboard, Timer, DriverStation, RobotBase, SendableBuilderImpl
+import wpiutil #import SendableBuilder
 from wpimath.geometry import Translation2d, Rotation2d, Pose2d
 from wpimath.kinematics import SwerveDrive4Kinematics, ChassisSpeeds, SwerveModuleState
 from wpimath.estimator import SwerveDrive4PoseEstimator
+from wpimath.trajectory import Trajectory
 from ntcore import NetworkTableInstance, NetworkTable
 
 # Our Imports
-from .swervemodule_2023 import SwerveModule
+from .swervemodule_2023_v2 import SwerveModule
 
 ### Constants
 # SwerveDrive Module Input Deadband
@@ -34,12 +37,28 @@ driveDeadband = 0.04
 # SwerveDrive Maximum Speeds
 maxVelocity = 16
 
+# Trajectory Maximums
+kMaxSpeedMetersPerSecond = 3
+kMaxAccelMetersPerSecondSq = 3
+kMaxAngularSpeedMetersPerSecond = math.pi
+kMaxAngularAccelMetersPerSecondSq = math.pi
+
 ### Class: SwerveDrive
 class SwerveDrive(SubsystemBase):
     
     fieldRelative:bool = True
     halfSpeed:bool = False
     motionMagic:bool = False
+    trajectory:Trajectory = None
+
+    #def initSendable(self, sendable:wpiutil.SendableBuilder):
+    #    super().initSendable(sendable)
+        #    sendable.addBooleanProperty(
+        #        "fieldRelative",
+        #        self.getFieldRelative,
+        #        self.setFieldRelative
+        #    )
+    #    pass
 
     def __init__(self):
         super().__init__()
@@ -81,7 +100,7 @@ class SwerveDrive(SubsystemBase):
                 self.moduleBL.getPosition(),
                 self.moduleBR.getPosition()
             ],
-            Pose2d(Translation2d(0,0), Rotation2d().fromDegrees(-180))
+            Pose2d(Translation2d(3,2), Rotation2d().fromDegrees(-180))
         )
 
         # Limelight
@@ -180,8 +199,17 @@ class SwerveDrive(SubsystemBase):
         self.runSwerveModuleStates(list(modStates))
 
     # Run SwerveDrive using SwerveModuleStates
+    noPrint = False
     def runSwerveModuleStates(self, states:typing.List[SwerveModuleState]) -> None:
-        if not RobotBase.isReal(): print( states )
+        # Print Output in Simulation Environment
+        if not RobotBase.isReal():
+            if not self.noPrint: print( states )
+            if states[0].speed != 0.0 and states[1].speed != 0.0 and states[2].speed != 0.0 and states[3].speed != 0.0:
+                self.noPrint = False
+            else:
+                self.noPrint = True
+    
+        # Update Desired State for each Swerve Module
         modStates = SwerveDrive4Kinematics.desaturateWheelSpeeds(states, maxVelocity)
         self.moduleFL.setDesiredState(modStates[0])
         self.moduleFR.setDesiredState(modStates[1])
@@ -204,6 +232,12 @@ class SwerveDrive(SubsystemBase):
     def fieldrelativeOff(self) -> None:
         self.fieldRelative = False
         print( "Field Relative: Off" )
+
+    def getFieldRelative(self) -> bool:
+        return self.fieldRelative
+    
+    def setFieldRelative(self, fr:bool) -> None:
+        self.fieldRelative = fr
 
 
     ### Half Speed Functions
@@ -246,4 +280,4 @@ class SwerveDrive(SubsystemBase):
         self.moduleFR.setMotionMagic( self.motionMagic )
         self.moduleBL.setMotionMagic( self.motionMagic )
         self.moduleBR.setMotionMagic( self.motionMagic )
-        
+

@@ -5,6 +5,7 @@ import typing
 # FRC Component Imports
 from commands2 import CommandBase
 from wpimath import applyDeadband
+from wpimath.filter import SlewRateLimiter
 from wpimath.kinematics import ChassisSpeeds
 
 # Our Imports
@@ -18,6 +19,9 @@ driveDeadband = 0.04
 maxVelocity = 16
 maxAngularVelocity = 100.48
 
+# Slew Rate Limiter
+slrValue = 5
+
 # Default Drive Command Class
 class DriveByStick(CommandBase):
     def __init__( self,
@@ -29,12 +33,13 @@ class DriveByStick(CommandBase):
                   halfSpeed:typing.Callable[[], bool] = (lambda: False),
                   fieldRelative:typing.Callable[[], bool] = (lambda: True)
                 ):
+        # CommandBase Initiation Configurations
         super().__init__()
         self.setName( "DriveByStick" )
+        self.addRequirements( swerveDrive )
         
+        # This Command Global Properties
         self.DriveSubsystem = swerveDrive
-        self.addRequirements( [self.DriveSubsystem] )
-
         self.lx = l_UpDown
         self.ly = l_LeftRight
         self.rx = r_UpDown
@@ -42,8 +47,11 @@ class DriveByStick(CommandBase):
         self.isHalfSpeed = halfSpeed
         self.isFieldRelative = fieldRelative
 
-    def initialize(self) -> None:
-        pass
+        # Slew Rate Limiters
+        self.srl_l_ud = SlewRateLimiter( slrValue )
+        self.srl_l_lr = SlewRateLimiter( slrValue )
+        self.srl_r_ud = SlewRateLimiter( slrValue )
+        self.srl_r_lr = SlewRateLimiter( slrValue )
 
     def execute(self) -> None:
         # Get States
@@ -64,6 +72,11 @@ class DriveByStick(CommandBase):
         x = applyDeadband( x, driveDeadband ) 
         y = applyDeadband( y, driveDeadband )
         r = applyDeadband( r, driveDeadband )
+
+        # Slew Rate Limiter
+        x = self.srl_l_ud.calculate( x )
+        y = self.srl_l_lr.calculate( y )
+        r = self.srl_r_lr.calculate( r )
 
         # Calculate Half Speed
         magnitude:float = 1.0 if not halfSpeed else 0.5
@@ -89,12 +102,7 @@ class DriveByStick(CommandBase):
         # Send ChassisSpeeds
         self.DriveSubsystem.runChassisSpeeds(speeds)
 
-
-    def end(self, interrupted:bool) -> None:
-        pass
-
-    def isFinished(self) -> bool:
-        return False
-    
-    def runsWhenDisabled(self) -> bool:
-        return False
+    def initialize(self) -> None: pass
+    def end(self, interrupted:bool) -> None: pass
+    def isFinished(self) -> bool: return False
+    def runsWhenDisabled(self) -> bool: return False

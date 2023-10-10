@@ -5,6 +5,26 @@
         "header": {
           "open": true
         }
+      },
+      "Talon FX[4]/Rev Limit": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX[7]": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX[7]/Integrated Sensor": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX[8]": {
+        "header": {
+          "open": true
+        }
       }
     },
     "RoboRIO": {
@@ -47,6 +67,12 @@
       "/LiveWindow/Ungrouped/Talon SRX [31]": "Motor Controller",
       "/LiveWindow/Ungrouped/class frc2::SubsystemBase": "Subsystem",
       "/SmartDashboard/Arm": "Subsystem",
+      "/SmartDashboard/ArmExtend": "Subsystem",
+      "/SmartDashboard/ArmPivot": "Subsystem",
+      "/SmartDashboard/ArmPivot-Down": "Command",
+      "/SmartDashboard/ArmPivot-Max": "Command",
+      "/SmartDashboard/ArmPivot-Min": "Command",
+      "/SmartDashboard/ArmPivot-Up": "Command",
       "/SmartDashboard/Auto Mode": "String Chooser",
       "/SmartDashboard/Claw": "Subsystem",
       "/SmartDashboard/DriveSCurve": "Command",
@@ -72,6 +98,9 @@
       "SmartDashboard": {
         "Auto Choices": {
           "open": false
+        },
+        "SwerveDrive": {
+          "open": true
         },
         "open": true
       }
