@@ -41,7 +41,7 @@ class RobotContainer:
             #'arm-pivot-max': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMax),
             #'arm-pivot-min': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMin),
             #'arm-pivot-up': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kNext),
-            #'arm-pivot-down': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kPrev)
+            #'arm-pivot-down': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kPrev) 
         } )
 
 
