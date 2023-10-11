@@ -90,8 +90,10 @@
   "NetworkTables": {
     "transitory": {
       "LiveWindow": {
-        "Claw": {
-          "open": true
+        "SwerveDrive": {
+          "MotionMagic": {
+            "open": true
+          }
         },
         "open": true
       },
@@ -99,7 +101,7 @@
         "Auto Choices": {
           "open": false
         },
-        "SwerveDrive": {
+        "Field": {
           "open": true
         },
         "open": true

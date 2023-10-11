@@ -1,6 +1,7 @@
 ### Imports
 # Python Imports
 import typing
+import math
 
 # FRC Component Imports
 from commands2 import CommandBase
@@ -12,15 +13,9 @@ from wpimath.kinematics import ChassisSpeeds
 from subsystems.swervedrive_2023 import SwerveDrive
 
 ### Constants
-# SwerveDrive Module Input Deadband
-driveDeadband = 0.04
-
-# SwerveDrive Maximum Speeds
-maxVelocity = 16
-maxAngularVelocity = 100.48
-
-# Slew Rate Limiter
-slrValue = 5
+# SwerveDrive Module Inputs
+driveDeadband = 0.04 # Deadband (Sensitivity towards Dead 0 on joystick)
+slrValue = 2 # Slew Rate Limiter (Sensitivity to how fast the joysticks bounds back to 0)
 
 # Default Drive Command Class
 class DriveByStick(CommandBase):
@@ -30,8 +25,7 @@ class DriveByStick(CommandBase):
                   l_LeftRight:typing.Callable[[], float],
                   r_UpDown:typing.Callable[[], float],
                   r_LeftRight:typing.Callable[[], float],
-                  halfSpeed:typing.Callable[[], bool] = (lambda: False),
-                  fieldRelative:typing.Callable[[], bool] = (lambda: True)
+                  halfSpeed:typing.Callable[[], bool] = (lambda: False)
                 ):
         # CommandBase Initiation Configurations
         super().__init__()
@@ -45,7 +39,6 @@ class DriveByStick(CommandBase):
         self.rx = r_UpDown
         self.ry = r_LeftRight
         self.isHalfSpeed = halfSpeed
-        self.isFieldRelative = fieldRelative
 
         # Slew Rate Limiters
         self.srl_l_ud = SlewRateLimiter( slrValue )
@@ -56,7 +49,6 @@ class DriveByStick(CommandBase):
     def execute(self) -> None:
         # Get States
         halfSpeed = self.isHalfSpeed()
-        fieldRelative = self.isFieldRelative()
 
         # Get Input Values
         x = self.lx()
@@ -82,25 +74,10 @@ class DriveByStick(CommandBase):
         magnitude:float = 1.0 if not halfSpeed else 0.5
         x *= magnitude
         y *= magnitude
-        r *= magnitude
-
-        # Drive        
-        if fieldRelative:
-            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-                vx = x * maxVelocity,
-                vy = y * maxVelocity,
-                omega = r * maxAngularVelocity,
-                robotAngle = self.DriveSubsystem.getHeading()
-            )
-        else:
-            speeds = ChassisSpeeds(
-                vx = x * maxVelocity,
-                vy = y * maxVelocity,
-                omega = r * maxAngularVelocity
-            )
+        #r *= magnitude
 
         # Send ChassisSpeeds
-        self.DriveSubsystem.runChassisSpeeds(speeds)
+        self.DriveSubsystem.runPercentageOutput(x, y, r)
 
     def initialize(self) -> None: pass
     def end(self, interrupted:bool) -> None: pass

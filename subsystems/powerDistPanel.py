@@ -14,6 +14,7 @@ CAN Network:  Default
 
 # FRC Component Imports
 from commands2 import SubsystemBase
+from wpilib import PowerDistribution
 
 # Our Imports
 
@@ -21,5 +22,12 @@ from commands2 import SubsystemBase
 
 ### Class: PowerDistPanel
 class PowerDistPanel(SubsystemBase):
+    _panel:PowerDistribution = None
+
     def __init__(self):
         super().__init__()
+        self.setSubsystem("PowerDistPanel")
+        self.setName("PowerDistPanel")
+
+        self._panel = PowerDistribution(0, PowerDistribution.ModuleType.kCTRE)
+        #self.addChild( "PowerDistPanel", self._panel )

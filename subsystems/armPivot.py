@@ -34,12 +34,12 @@ pivot_kP = 0.15
 pivot_kI = 0
 pivot_kD = 0
 pivot_kF = 0.065
-pivot_kError = 0.5
+pivot_kError = 5
 
 # Position Constants
-pivot_position_min = 0
-pivot_position_max = 100
-pivot_position_start = 5
+pivot_position_min = 0.0
+pivot_position_max = 95.0
+pivot_position_start = 0.0
 
 # Motion Magic Constants
 pivot_mmMaxVelocity = 2048
@@ -53,7 +53,7 @@ pivot_kMaxAngularAccelMetersPerSecondSq = math.pi
 class ArmPivot(SubsystemBase):
     # Variables
     pivotMotor:WPI_TalonFX = None
-    stallDetector:MotorUtils = MotorUtils(0, 0.15, 0.15, PowerDistribution(0, PowerDistribution.ModuleType.kCTRE) )
+    #stallDetector:MotorUtils = MotorUtils(0, 0.15, 0.15, PowerDistribution(0, PowerDistribution.ModuleType.kCTRE) )
     currentSetPosition:int = 0
 
     def __init__(self):
@@ -82,7 +82,8 @@ class ArmPivot(SubsystemBase):
 
 
         # Set Starting Position
-        self.setPosition( pivot_position_start )
+        self.currentSetPosition = pivot_position_start
+        #self.setPosition( pivot_position_start )
 
         #self.getController().initSendable()
         self.setSubsystem( "ArmPivot" )
@@ -93,16 +94,19 @@ class ArmPivot(SubsystemBase):
     def periodic(self) -> None:
         if RobotState.isDisabled(): return None
 
-        kMeasuredPosHorizontal:int = 90; #Position measured when arm is horizontal
-        kTicksPerDegree:float = 1 #4096 / 360 #Sensor is 1:1 with arm rotation
+        kMeasuredPosHorizontal:int = 100000; #Position measured when arm is horizontal
+        kTicksPerDegree:float = 1024 #4096 / 360 #Sensor is 1:1 with arm rotation
         currentPos:int = self.pivotMotor.getSelectedSensorPosition()
         degrees:float = (currentPos - kMeasuredPosHorizontal) / kTicksPerDegree
         radians:float = math.radians(degrees)
         cosineScalar:float = math.cos(radians)
 
+        self.currentSetPosition = max( min( self.currentSetPosition, pivot_position_max ), pivot_position_min )
+        #print( self.currentSetPosition )
         self.pivotMotor.set(
-            ControlMode.MotionMagic,
-            self.currentSetPosition,
+            #ControlMode.MotionMagic,
+            ControlMode.Position,
+            (self.currentSetPosition * 1024),
             DemandType.ArbitraryFeedForward,
             pivot_kF * cosineScalar
         )
@@ -118,11 +122,15 @@ class ArmPivot(SubsystemBase):
 
     ### Pivot Position Functions
     # Set Pivot Position
-    def setPosition(self, position:int) -> None:
+    def setPosition(self, position:float) -> None:
         position = max( min( position, pivot_position_max ), pivot_position_min ) # Verify position is in range
+        #scaledPos = (position-2) * 1024
         self.currentSetPosition = position
         #self.pivotMotor.set(ControlMode.Position, position)  ### Using periodic property
         #print( f"Pivot: {position}" )
+
+    def movePosition(self, degreesPerTick:float):
+        self.currentSetPosition += degreesPerTick
 
     # Get the Current Pivot Position
     def getPosition(self) -> int:

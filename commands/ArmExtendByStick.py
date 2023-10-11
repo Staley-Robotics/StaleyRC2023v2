@@ -41,10 +41,13 @@ class ArmExtendByStick(CommandBase):
         input = applyDeadband( input, deadband )
 
         # Run Input
-        if input != 0.0: 
-            pos = self.armExtend.getPosition()
-            pos += int(rate * input)
-            self.armExtend.setPosition( pos )
+        #if input != 0.0: 
+        #    pos = self.armExtend.getPosition()
+        #    pos += int(rate * input)
+        #    self.armExtend.setPosition( pos )
+
+        self.armExtend.movePosition( input )
+
 
     def end(self, interrupted:bool) -> None:
         pass

@@ -29,15 +29,15 @@ from util.MotorUtils import MotorUtils
 # Module Physical Constants
 
 # Controller Constants
-extend_kP = 0.5
+extend_kP = 5
 extend_kI = 0
 extend_kD = 0
-extend_kF = 0
-extend_kError = 0
+extend_kF = 0 #0.065
+extend_kError = 10
 
 # Position Constants
 extend_position_min = 0
-extend_position_max = 100
+extend_position_max = 22000
 extend_position_start = 5
 
 # Motion Magic Constants
@@ -54,7 +54,7 @@ class ArmExtend(SubsystemBase):
     currentSetPosition:int = 0
     # Variables
     extendMotor:WPI_TalonSRX = None
-    stallDetector:MotorUtils = MotorUtils(0, 0.15, 0.15, PowerDistribution(0, PowerDistribution.ModuleType.kCTRE) )
+    #stallDetector:MotorUtils = MotorUtils(0, 0.15, 0.15, PowerDistribution(0, PowerDistribution.ModuleType.kCTRE) )
 
     # Constructor
     def __init__(self):
@@ -69,6 +69,7 @@ class ArmExtend(SubsystemBase):
         self.extendMotor.setNeutralMode(NeutralMode.Brake)
         self.extendMotor.selectProfileSlot(1, 0)
         self.extendMotor.configNeutralDeadband(0.001)
+        self.extendMotor.setSelectedSensorPosition(0)
         
         #self.extendMotor.configFeedbackNotContinuous(True)
 
@@ -85,7 +86,8 @@ class ArmExtend(SubsystemBase):
 
 
         # Set Starting Position
-        self.setPosition( extend_position_start )
+        self.currentSetPosition = 0
+        #self.setPosition( extend_position_start )
 
         #self.getController().initSendable()
         self.setSubsystem( "ArmExtend" )
@@ -93,32 +95,35 @@ class ArmExtend(SubsystemBase):
         self.addChild( "Extend", self.extendMotor )
 
     def periodic(self) -> None:
-        kMeasuredPosHorizontal:int = 840; #Position measured when arm is horizontal
-        kTicksPerDegree:float = 4096 / 360 #Sensor is 1:1 with arm rotation
-        currentPos:int = self.extendMotor.getSelectedSensorPosition()
-        degrees:float = (currentPos - kMeasuredPosHorizontal) / kTicksPerDegree
-        radians:float = math.radians(degrees)
-        cosineScalar:float = math.cos(radians)
+        if RobotState.isDisabled(): return None
 
         self.extendMotor.set(
-            ControlMode.MotionMagic,
-            self.currentSetPosition,
-            DemandType.ArbitraryFeedForward,
-            extend_kF * cosineScalar
+            ControlMode.Position,
+            self.currentSetPosition
         )
 
     ### Extend Position Functions
     # Sets the Extend Position
-    def setPosition(self, position:int) -> None:
-        position = max( min( position, extend_position_max ), extend_position_min ) # Verify position is in range
-        #self.extendMotor.set(ControlMode.Position, position)
+    def setPosition(self, position:int, override:bool = False) -> None:
+        if not override:
+            position = max( min( position, extend_position_max ), extend_position_min ) # Verify position is in range
         self.currentSetPosition = position
-        print( f"Extend: {position}" )
+
+    # Move Position by Joystick Float
+    def movePosition(self, input:float, override:bool = False) -> None:
+        self.currentSetPosition += input * 500
+        if not override:
+            self.currentSetPosition = max( min( self.currentSetPosition, extend_position_max ), extend_position_min )
 
     # Get the Current Extend Position
     def getPosition(self) -> int:
-        position = self.extendMotor.getClosedLoopTarget() - self.extendMotor.getClosedLoopError()
+        position = self.extendMotor.getSelectedSensorPosition()
         return int( position )
+
+    # Reset the Current Position and Sensor Settings
+    def resetPosition(self) -> None:
+        self.extendMotor.setSelectedSensorPosition( 0 )
+        self.currentSetPosition = 0
     
     # Get the Extend Position Target 
     def getPositionTarget(self) -> int:

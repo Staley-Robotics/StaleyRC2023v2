@@ -15,8 +15,8 @@ from commands import *
 # Constants
 kMaxSpeedMetersPerSecond = 3
 kMaxAccelMetersPerSecondSq = 3
-kMaxAngularSpeedMetersPerSecond = math.pi
-kMaxAngularAccelMetersPerSecondSq = math.pi
+kMaxAngularSpeedMetersPerSecond = 2 * math.pi
+kMaxAngularAccelMetersPerSecondSq = 2 * math.pi
 
 class SCurve(SequentialCommandGroup):
     m_trajectory:Trajectory = None
@@ -41,8 +41,8 @@ class SCurve(SequentialCommandGroup):
         x = startPose.X()
         y = startPose.Y()
         waypoints = [
-            Translation2d( x+1, y+1 ),
-            Translation2d( x+2, y-1 )
+            Translation2d( x+1, y+0.5 ),
+            Translation2d( x+2, y-0.5 )
         ]
         endPose = Pose2d(
             Translation2d( x+3, y ),

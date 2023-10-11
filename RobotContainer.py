@@ -15,7 +15,7 @@ class RobotContainer:
     
     # Subsystems
     swerveDrive = SwerveDrive()
-    pneumatics = Pneumatics()
+    #pneumatics = Pneumatics()
     armPivot = ArmPivot()
     armExtend = ArmExtend()
     claw = Claw()
@@ -37,17 +37,17 @@ class RobotContainer:
             'clawToggle': ClawAction(self.claw, ClawAction.Action.kToggle),
             'halfspeed': ToggleHalfSpeed(self.swerveDrive),
             'fieldrelative': ToggleFieldRelative(self.swerveDrive),
-            'motionmagic': ToggleMotionMagic(self.swerveDrive),
-            'arm-pivot-max': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMax),
-            'arm-pivot-min': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMin),
-            'arm-pivot-up': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kNext),
-            'arm-pivot-down': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kPrev)
+            'motionmagic': ToggleMotionMagic(self.swerveDrive)#,
+            #'arm-pivot-max': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMax),
+            #'arm-pivot-min': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMin),
+            #'arm-pivot-up': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kNext),
+            #'arm-pivot-down': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kPrev)
         } )
 
 
         # SmartDashboard Subsystems
         SmartDashboard.putData(key="SwerveDrive", data=self.swerveDrive)
-        SmartDashboard.putData(key="Pneumatics",  data=self.pneumatics)
+        #SmartDashboard.putData(key="Pneumatics",  data=self.pneumatics)
         SmartDashboard.putData(key="ArmPivot",    data=self.armPivot)
         SmartDashboard.putData(key="ArmExtend",   data=self.armExtend)
         SmartDashboard.putData(key="Claw",        data=self.claw)
@@ -55,10 +55,10 @@ class RobotContainer:
         # SmartDashboard Commands
         SmartDashboard.putData(key="SCurve", data=self.cmds['scurve']) #SCurve(self.swerveDrive)
         SmartDashboard.putData(key="Lockdown", data=self.cmds['lockdown']) #DriveLockdown(self.swerveDrive))
-        SmartDashboard.putData(key="ArmPivot-Max", data=self.cmds['arm-pivot-max'])
-        SmartDashboard.putData(key="ArmPivot-Min", data=self.cmds['arm-pivot-min'])
-        SmartDashboard.putData(key="ArmPivot-Up", data=self.cmds['arm-pivot-up'])
-        SmartDashboard.putData(key="ArmPivot-Down", data=self.cmds['arm-pivot-down'])
+        #SmartDashboard.putData(key="ArmPivot-Max", data=self.cmds['arm-pivot-max'])
+        #SmartDashboard.putData(key="ArmPivot-Min", data=self.cmds['arm-pivot-min'])
+        #SmartDashboard.putData(key="ArmPivot-Up", data=self.cmds['arm-pivot-up'])
+        #SmartDashboard.putData(key="ArmPivot-Down", data=self.cmds['arm-pivot-down'])
 
         # Configure Default Commands
         self.configureDefaultCommands()
@@ -82,8 +82,7 @@ class RobotContainer:
                 lambda: -self.getDriver1().getLeftX(),
                 lambda: -self.getDriver1().getRightY(),
                 lambda: -self.getDriver1().getRightX(),
-                lambda: self.swerveDrive.isHalfspeed(),
-                lambda: self.swerveDrive.isFieldRelative()
+                lambda: self.swerveDrive.halfSpeed.get()
             )
         )
         # Arm by Joystick

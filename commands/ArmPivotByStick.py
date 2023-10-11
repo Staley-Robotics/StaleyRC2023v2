@@ -39,10 +39,12 @@ class ArmPivotByStick(CommandBase):
         input  = applyDeadband( input,   deadband ) 
 
         # Run Input
-        if input != 0.0: 
-            pos = self.armPivot.getPosition()
-            pos += int(rate * input)
-            self.armPivot.setPosition( pos )
+        #if input != 0.0: 
+        #    pos = self.armPivot.getPosition()
+        #    pos += int(rate * input)
+        #    self.armPivot.setPosition( pos )
+
+        self.armPivot.movePosition( input )
 
     def end(self, interrupted:bool) -> None:
         pass

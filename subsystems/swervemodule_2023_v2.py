@@ -31,7 +31,7 @@ from wpimath.controller import PIDController
 driveMotorTicks = 2048
 angleMotorTicks = 2048
 angleSensorTicks = 4096
-driveGearRatio = 1/6.55
+driveGearRatio = 1/6.55 #Flipped Pulley (5.50, 6.55, 7.80), Flipped Gear (6.75, 7.36, 8.10)
 wheelRadius = 0.05
 
 # Controller Constants
@@ -42,7 +42,7 @@ drive_kD = 0
 drive_kF = 0.065
 drive_mmMaxVelocity = 2048
 drive_mmMaxAcceleration = 2048
-drive_mmSCurveSmoothing = 0
+drive_mmSCurveSmoothing = 8
 
 angle_kP = 0.5
 angle_kI = 0
@@ -51,7 +51,6 @@ angle_kF = 0
 angle_mmMaxVelocity = 2048
 angle_mmMaxAcceleration = 2048
 angle_mmSCurveSmoothing = 0
-
 
 # Class: SwerveModule
 class SwerveModule(SubsystemBase):
@@ -159,12 +158,6 @@ class SwerveModule(SubsystemBase):
 
     def setDesiredState(self, desiredState:SwerveModuleState):
         ### Calculate / Optomize
-        #angleCurrentPosition = self.angleMotor.getSelectedSensorPosition(0)
-        #angleCurrentRotation = Rotation2d( value=(angleCurrentPosition * 2 * math.pi / angleSensorTicks) )
-        #optimalState: SwerveModuleState = SwerveModuleState.optimize(
-        #    desiredState,
-        #    angleCurrentRotation
-        #)
         currentAnglePosition = self.angleSensor.getPosition()
         currentAngleRotation = Rotation2d(0).fromDegrees(currentAnglePosition)
         optimalState:SwerveModuleState = SwerveModuleState.optimize(
@@ -178,7 +171,7 @@ class SwerveModule(SubsystemBase):
 
     def getPosition(self) -> SwerveModulePosition:
         dPosition = self.driveMotor.getSelectedSensorPosition(0)
-        driveMeters = getDistanceTicksToMeters(dPosition, driveMotorTicks, wheelRadius,driveGearRatio)
+        driveMeters = getDistanceTicksToMeters(dPosition, driveMotorTicks, wheelRadius, driveGearRatio)
         rPosition = self.angleSensor.getPosition()  ## Should we use self.angleSensor ??
         rotatePosition = Rotation2d(0).fromDegrees(rPosition)
 
