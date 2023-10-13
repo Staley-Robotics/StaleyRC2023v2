@@ -2,6 +2,7 @@ from .ArmPivotByStick import *
 from .ArmPivotPosition import *
 from .ArmExtendByStick import *
 from .ArmExtendPosition import *
+from .ArmExtendReset import *
 from .ClawAction import *
 from .DriveBalance import *
 from .DriveByStick import *

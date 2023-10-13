@@ -70,7 +70,7 @@ class ArmExtendPosition(CommandBase):
         pass
 
     def isFinished(self) -> bool:
-        return False
+        return self.armExtend.atPosition()
     
     def runsWhenDisabled(self) -> bool:
         return False

@@ -2,7 +2,7 @@
 from wpilib import XboxController, SendableChooser, SmartDashboard
 import commands2.button
 import commands2.cmd
-from commands2 import Command 
+from commands2 import * #Command 
 
 # Import: Subsystems and Commands
 from subsystems import *
@@ -14,10 +14,11 @@ from autonomous.AutoSample1 import AutoSample1
 class RobotContainer:
     
     # Subsystems
+    #game = Game()
     swerveDrive = SwerveDrive()
     #pneumatics = Pneumatics()
     armPivot = ArmPivot()
-    armExtend = ArmExtend()
+    #armExtend = ArmExtend()
     claw = Claw()
     pdp = PowerDistPanel()
 
@@ -38,18 +39,18 @@ class RobotContainer:
             'halfspeed': ToggleHalfSpeed(self.swerveDrive),
             'fieldrelative': ToggleFieldRelative(self.swerveDrive),
             'motionmagic': ToggleMotionMagic(self.swerveDrive)#,
+            #'extendreset': ArmExtendReset(self.armExtend) #,
             #'arm-pivot-max': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMax),
             #'arm-pivot-min': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMin),
             #'arm-pivot-up': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kNext),
             #'arm-pivot-down': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kPrev) 
         } )
 
-
         # SmartDashboard Subsystems
         SmartDashboard.putData(key="SwerveDrive", data=self.swerveDrive)
         #SmartDashboard.putData(key="Pneumatics",  data=self.pneumatics)
         SmartDashboard.putData(key="ArmPivot",    data=self.armPivot)
-        SmartDashboard.putData(key="ArmExtend",   data=self.armExtend)
+        #SmartDashboard.putData(key="ArmExtend",   data=self.armExtend)
         SmartDashboard.putData(key="Claw",        data=self.claw)
 
         # SmartDashboard Commands
@@ -59,6 +60,7 @@ class RobotContainer:
         #SmartDashboard.putData(key="ArmPivot-Min", data=self.cmds['arm-pivot-min'])
         #SmartDashboard.putData(key="ArmPivot-Up", data=self.cmds['arm-pivot-up'])
         #SmartDashboard.putData(key="ArmPivot-Down", data=self.cmds['arm-pivot-down'])
+        #SmartDashboard.putData(key="ExtendReset", data=self.cmds['extendreset'])
 
         # Configure Default Commands
         self.configureDefaultCommands()
@@ -81,7 +83,7 @@ class RobotContainer:
                 lambda: -self.getDriver1().getLeftY(),
                 lambda: -self.getDriver1().getLeftX(),
                 lambda: -self.getDriver1().getRightY(),
-                lambda: -self.getDriver1().getRightX(),
+                lambda: self.getDriver1().getLeftTriggerAxis() - self.getDriver1().getRightTriggerAxis(), #-self.getDriver1().getRightX(),
                 lambda: self.swerveDrive.halfSpeed.get()
             )
         )
@@ -92,12 +94,18 @@ class RobotContainer:
                 lambda: -self.getDriver2().getLeftY()
             )
         )
-        self.armExtend.setDefaultCommand(
-            ArmExtendByStick(
-                self.armExtend,
-                lambda: -self.getDriver2().getRightY()
-            )
-        )
+        #self.armExtend.setDefaultCommand(
+        #    ArmExtendByStick(
+        #        self.armExtend,
+        #        lambda: -self.getDriver2().getRightY()
+        #    )
+        #)
+        #self.game.setDefaultCommand(
+        #    SelectDropoff(
+        #        self.game,
+        #        lambda: self.getDriver1().getPOV()
+        #    )
+        #)
 
 
     def configureButtonBindings(self):
@@ -106,10 +114,10 @@ class RobotContainer:
         self.getDriver1().start().toggleOnTrue( self.cmds['fieldrelative'] )
         self.getDriver1().rightBumper().toggleOnTrue( self.cmds['halfspeed'] )
         self.getDriver1().leftBumper().whileTrue( self.cmds['scurve'] )
-        self.getDriver1().back().toggleOnTrue( self.cmds['motionmagic'])
-        
+        self.getDriver1().back().toggleOnTrue( self.cmds['motionmagic'] )
+
         # Driver 2
-        self.getDriver2().rightBumper().toggleOnTrue( self.cmds['clawToggle'] )
+        self.getDriver2().A().toggleOnTrue( self.cmds['clawToggle'] )
 
     # Return Controllers
     def getDriver1(self) -> commands2.button.CommandXboxController:

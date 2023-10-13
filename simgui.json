@@ -76,6 +76,7 @@
       "/SmartDashboard/Auto Mode": "String Chooser",
       "/SmartDashboard/Claw": "Subsystem",
       "/SmartDashboard/DriveSCurve": "Command",
+      "/SmartDashboard/ExtendReset": "Command",
       "/SmartDashboard/Field": "Field2d",
       "/SmartDashboard/Lockdown": "Command",
       "/SmartDashboard/Pneumatics": "Subsystem",

@@ -40,6 +40,7 @@ drive_kP = 0.15
 drive_kI = 0
 drive_kD = 0
 drive_kF = 0.065
+drive_kSlotIdx = 0
 drive_mmMaxVelocity = 2048
 drive_mmMaxAcceleration = 2048
 drive_mmSCurveSmoothing = 8
@@ -48,6 +49,7 @@ angle_kP = 0.5
 angle_kI = 0
 angle_kD = 0
 angle_kF = 0
+angle_kSlotIdx = 0
 angle_mmMaxVelocity = 2048
 angle_mmMaxAcceleration = 2048
 angle_mmSCurveSmoothing = 0
@@ -104,18 +106,18 @@ class SwerveModule(SubsystemBase):
         self.addChild( f"Sensor", self.angleSensor )
 
         # Angle Integrated PID Controller
-        self.angleMotor.config_kP( 1, angle_kP )
-        self.angleMotor.config_kI( 1, angle_kI )
-        self.angleMotor.config_kD( 1, angle_kD )
-        self.angleMotor.config_kF( 1, angle_kF )
-        self.angleMotor.selectProfileSlot(1, 0)
+        self.angleMotor.config_kP( angle_kSlotIdx, angle_kP )
+        self.angleMotor.config_kI( angle_kSlotIdx, angle_kI )
+        self.angleMotor.config_kD( angle_kSlotIdx, angle_kD )
+        self.angleMotor.config_kF( angle_kSlotIdx, angle_kF )
+        self.angleMotor.selectProfileSlot(angle_kSlotIdx, 0)
 
         # Drive Integrated PID Controller
-        self.driveMotor.config_kP( 1, drive_kP )
-        self.driveMotor.config_kI( 1, drive_kI )
-        self.driveMotor.config_kD( 1, drive_kP )
-        self.driveMotor.config_kF( 1, drive_kF )
-        self.driveMotor.selectProfileSlot(1, 0)
+        self.driveMotor.config_kP( drive_kSlotIdx, drive_kP )
+        self.driveMotor.config_kI( drive_kSlotIdx, drive_kI )
+        self.driveMotor.config_kD( drive_kSlotIdx, drive_kP )
+        self.driveMotor.config_kF( drive_kSlotIdx, drive_kF )
+        self.driveMotor.selectProfileSlot(drive_kSlotIdx, 0)
 
         # Drive Integrated PID - Motion Magic Properties
         self.angleMotor.configMotionCruiseVelocity( angle_mmMaxVelocity )
@@ -145,11 +147,18 @@ class SwerveModule(SubsystemBase):
         velocityTp100ms = getVelocityMpsToTp100ms(velocity, driveMotorTicks, wheelRadius, driveGearRatio ) # Get Velocity in Ticks per 100 ms
         # Set Velocity
         self.driveMotor.set( ControlMode.Velocity, velocityTp100ms )
+        #if self.motionMagic:
+        #    # Convert Velocity to Predicted Position
+        #    measuredPosition = self.driveMotor.getSelectedSensorPosition(0)
+        #    targetPosition = measuredPosition + ( velocityTp100ms / 5 )
+        #    self.driveMotor.set( ControlMode.MotionMagic, targetPosition )
+        #else:
+        #    self.driveMotor.set( ControlMode.Velocity, velocityTp100ms )
 
         # Angle Position Calculate
-        position = self.moduleState.angle
-        positionTicks = getTicksFromRotation(position, angleSensorTicks)  # Get Optomized Target as Ticks
-        positionTicks = getContinuousInputMeasurement(position.degrees(), positionTicks, angleSensorTicks)  # Correction for [-180,180)
+        currentTicks = self.angleMotor.getSelectedSensorPosition(0)
+        targetTicks = getTicksFromRotation(self.moduleState.angle, angleSensorTicks)  # Get Optomized Target as Ticks
+        positionTicks = getContinuousInputMeasurement(currentTicks, targetTicks, angleSensorTicks)  # Correction for [-180,180)
         # Set Angle Position
         if self.motionMagic:
             self.angleMotor.set( ControlMode.MotionMagic, positionTicks )

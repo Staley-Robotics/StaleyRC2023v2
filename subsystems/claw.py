@@ -27,7 +27,7 @@ class Claw(SubsystemBase):
     # Constructor
     def __init__(self):
         super().__init__()
-        self.solenoid = DoubleSolenoid(0, PneumaticsModuleType.CTREPCM, 3, 5)
+        self.solenoid = DoubleSolenoid(0, PneumaticsModuleType.CTREPCM, 3, 4)
 
         self.setSubsystem( "Claw" )
         self.setName( "Claw" )
@@ -53,6 +53,8 @@ class Claw(SubsystemBase):
 
     # Toggle Claw
     def toggle(self):
+        if self.solenoid.get() == DoubleSolenoid.Value.kOff:
+            self.solenoid.set( DoubleSolenoid.Value.kReverse )
         if self.isDisabled():
             self.close()
         else:

@@ -37,7 +37,7 @@ pivot_kF = 0.065
 pivot_kError = 5
 
 # Position Constants
-pivot_position_min = 0.0
+pivot_position_min = -5.0
 pivot_position_max = 95.0
 pivot_position_start = 0.0
 

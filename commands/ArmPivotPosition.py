@@ -17,6 +17,18 @@ rate = 10
 ### DefaultArm Command Class
 class ArmPivotPosition(CommandBase):
     class Position:
+        pickup:int = 90.0
+        pickupTakeoff:int = 91.0
+
+        dropTop:int = 90.0
+        dropTopRelease:int = 88.0
+
+        dropMiddle:int = 10.0
+        dropMiddleRelease:int = 9.0
+
+        dropBottom:int = 5.0
+        dropBottomRelease:int = 5.0
+               
         values:list[int] = [
             0,
             10,

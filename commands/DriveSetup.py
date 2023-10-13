@@ -13,7 +13,7 @@ from subsystems import SwerveDrive
 class ToggleHalfSpeed(InstantCommand):
     def __init__(self, DriveSubsystem:SwerveDrive) -> None:
         super().__init__(
-            toRun=lambda: DriveSubsystem.halfspeedToggle()
+            toRun=lambda: DriveSubsystem.halfSpeed.toggle()
         )
 
     def runsWhenDisabled(self) -> bool: return True
@@ -22,7 +22,7 @@ class ToggleHalfSpeed(InstantCommand):
 class ToggleFieldRelative(InstantCommand):
     def __init__(self, DriveSubsystem:SwerveDrive) -> None:
         super().__init__(
-            toRun=lambda: DriveSubsystem.fieldrelativeToggle()
+            toRun=lambda: DriveSubsystem.fieldRelative.toggle()
         )
     
     def runsWhenDisabled(self) -> bool: return True
@@ -31,7 +31,7 @@ class ToggleFieldRelative(InstantCommand):
 class ToggleMotionMagic(InstantCommand):
     def __init__(self, DriveSubsystem:SwerveDrive) -> None:
         super().__init__(
-            toRun=lambda: DriveSubsystem.motionmagicToggle()
+            toRun=lambda: DriveSubsystem.motionMagic.toggle()
         )
     
     def runsWhenDisabled(self) -> bool: return True
