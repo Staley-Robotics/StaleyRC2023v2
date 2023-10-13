@@ -1,27 +1,12 @@
 {
   "HALProvider": {
     "Other Devices": {
-      "CANCoder[12]": {
+      "Talon SRX[31]": {
         "header": {
           "open": true
         }
       },
-      "Talon FX[4]/Rev Limit": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX[7]": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX[7]/Integrated Sensor": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX[8]": {
+      "Talon SRX[31]/Quad Encoder": {
         "header": {
           "open": true
         }

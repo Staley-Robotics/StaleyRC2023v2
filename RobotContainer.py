@@ -12,24 +12,25 @@ from autonomous.AutoSample1 import AutoSample1
 
 # Define Robot Container Class
 class RobotContainer:
-    
-    # Subsystems
-    #game = Game()
-    swerveDrive = SwerveDrive()
-    #pneumatics = Pneumatics()
-    armPivot = ArmPivot()
-    #armExtend = ArmExtend()
-    claw = Claw()
-    pdp = PowerDistPanel()
-
-    # Controllers
-    driver1 = commands2.button.CommandXboxController(0)
-    driver2 = commands2.button.CommandXboxController(1)
 
     # Commands
     cmds = dict()
 
     def __init__(self):
+        # Subsystems
+        self.swerveDrive:SwerveDrive = SwerveDrive()
+        #pneumatics = Pneumatics()
+        self.armPivot = ArmPivot()
+        self.armExtend = ArmExtend()
+        self.claw = Claw()
+        self.pdp = PowerDistPanel()
+        self.limelight1 = Limelight( "limelight-one", lambda: self.swerveDrive.getOdometry() )
+        self.limelight2 = Limelight( "limelight-two", lambda: self.swerveDrive.getOdometry() )
+
+        # Controllers
+        driver1 = commands2.button.CommandXboxController(0)
+        driver2 = commands2.button.CommandXboxController(1)
+
         # List of Commands
         self.cmds = dict( {
             'auto1': AutoSample1(self.swerveDrive, self.armPivot, self.claw),
@@ -38,8 +39,8 @@ class RobotContainer:
             'clawToggle': ClawAction(self.claw, ClawAction.Action.kToggle),
             'halfspeed': ToggleHalfSpeed(self.swerveDrive),
             'fieldrelative': ToggleFieldRelative(self.swerveDrive),
-            'motionmagic': ToggleMotionMagic(self.swerveDrive)#,
-            #'extendreset': ArmExtendReset(self.armExtend) #,
+            'motionmagic': ToggleMotionMagic(self.swerveDrive),
+            'extendreset': ArmExtendReset(self.armExtend) #,
             #'arm-pivot-max': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMax),
             #'arm-pivot-min': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMin),
             #'arm-pivot-up': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kNext),
@@ -50,7 +51,7 @@ class RobotContainer:
         SmartDashboard.putData(key="SwerveDrive", data=self.swerveDrive)
         #SmartDashboard.putData(key="Pneumatics",  data=self.pneumatics)
         SmartDashboard.putData(key="ArmPivot",    data=self.armPivot)
-        #SmartDashboard.putData(key="ArmExtend",   data=self.armExtend)
+        SmartDashboard.putData(key="ArmExtend",   data=self.armExtend)
         SmartDashboard.putData(key="Claw",        data=self.claw)
 
         # SmartDashboard Commands
@@ -60,7 +61,7 @@ class RobotContainer:
         #SmartDashboard.putData(key="ArmPivot-Min", data=self.cmds['arm-pivot-min'])
         #SmartDashboard.putData(key="ArmPivot-Up", data=self.cmds['arm-pivot-up'])
         #SmartDashboard.putData(key="ArmPivot-Down", data=self.cmds['arm-pivot-down'])
-        #SmartDashboard.putData(key="ExtendReset", data=self.cmds['extendreset'])
+        SmartDashboard.putData(key="ExtendReset", data=self.cmds['extendreset'])
 
         # Configure Default Commands
         self.configureDefaultCommands()
@@ -94,12 +95,12 @@ class RobotContainer:
                 lambda: -self.getDriver2().getLeftY()
             )
         )
-        #self.armExtend.setDefaultCommand(
-        #    ArmExtendByStick(
-        #        self.armExtend,
-        #        lambda: -self.getDriver2().getRightY()
-        #    )
-        #)
+        self.armExtend.setDefaultCommand(
+            ArmExtendByStick(
+                self.armExtend,
+                lambda: -self.getDriver2().getRightY()
+            )
+        )
         #self.game.setDefaultCommand(
         #    SelectDropoff(
         #        self.game,

@@ -30,13 +30,12 @@ class ArmExtendReset(CommandBase):
 
     def initialize(self) -> None:
         self.timer.reset()
-        self.timer.start()
         self.stallCycleCount = -1
         self.lastPosition = self.armExtend.getPosition()
+        self.armExtend.setPosition( resetPosition, True )
         print( resetPosition )
 
     def execute(self) -> None: 
-        self.armExtend.setPosition( resetPosition )
         currentPos = self.armExtend.getPosition()
         difference = currentPos - self.lastPosition
         if abs( difference ) < positionThreshold:
@@ -44,13 +43,14 @@ class ArmExtendReset(CommandBase):
         else:
             self.stallCycleCount = 0
         self.lastPosition = currentPos
-        print( f"Current: {self.armExtend.getPosition()} Set: {self.armExtend.currentSetPosition}" )
+        print( f"Time: {self.timer.get()} Current: {self.armExtend.getPosition()} Set: {self.armExtend.getSetPosition()}" )
 
     
     def end(self, interrupted:bool) -> None:
         self.timer.stop()
         if not interrupted:
             self.armExtend.resetPosition()
+        print( f"Time: {self.timer.get()} Current: {self.armExtend.getPosition()} Set: {self.armExtend.getSetPosition()}" )
 
     def isFinished(self) -> bool:
         if self.timer.get() <= timerExpiryThreshold:

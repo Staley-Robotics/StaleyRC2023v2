@@ -33,7 +33,11 @@ class Claw(SubsystemBase):
         self.setName( "Claw" )
         self.addChild( "Solenoid", self.solenoid )
 
-    
+    # Periodic
+    def periodic(self):
+        # Safeguard to solenoid in Off State
+        if self.solenoid.get() == DoubleSolenoid.Value.kOff:
+            self.solenoid.set( DoubleSolenoid.Value.kReverse )
 
     #def initSendable(self):
     #    self.solenoid = DoubleSolenoid(0, PneumaticsModuleType.CTREPCM, 3, 5)

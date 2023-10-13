@@ -63,7 +63,7 @@ class ArmExtend(SubsystemBase):
         # Extend Motor
         self.extendMotor = WPI_TalonSRX(31)
         self.extendMotor.configFactoryDefault()
-        self.extendMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0)
+        self.extendMotor.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0)
         self.extendMotor.setSensorPhase(False)
         self.extendMotor.setInverted(False)
         self.extendMotor.setNeutralMode(NeutralMode.Brake)
@@ -117,7 +117,7 @@ class ArmExtend(SubsystemBase):
 
     # Get the Current Extend Position
     def getPosition(self) -> int:
-        position = self.extendMotor.getSelectedSensorPosition()
+        position = self.extendMotor.getSelectedSensorPosition(0)
         return int( position )
 
     # Reset the Current Position and Sensor Settings
@@ -125,6 +125,9 @@ class ArmExtend(SubsystemBase):
         self.extendMotor.setSelectedSensorPosition( 0 )
         self.currentSetPosition = 0
     
+    def getSetPosition(self) -> int:
+        return int( self.currentSetPosition )
+
     # Get the Extend Position Target 
     def getPositionTarget(self) -> int:
         return int( self.extendMotor.getClosedLoopTarget() )

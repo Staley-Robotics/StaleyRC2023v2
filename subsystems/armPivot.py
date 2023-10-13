@@ -80,7 +80,6 @@ class ArmPivot(SubsystemBase):
         self.pivotMotor.configMotionAcceleration( pivot_mmMaxAcceleration )
         self.pivotMotor.configMotionSCurveStrength( pivot_mmSCurveSmoothing )
 
-
         # Set Starting Position
         self.currentSetPosition = pivot_position_start
         #self.setPosition( pivot_position_start )
@@ -111,12 +110,12 @@ class ArmPivot(SubsystemBase):
             pivot_kF * cosineScalar
         )
 
-        #if not RobotBase.isReal():
-        #    if not self.noPrint: print( f"Pivot: {self.pivotMotor.getSelectedSensorPosition()}\tTarget: {self.pivotMotor.getClosedLoopTarget()}\tError: {self.pivotMotor.getClosedLoopError()}" )
-        #    if self.pivotMotor.getClosedLoopError() > 0.0:
-        #        self.noPrint = False
-        #    else:
-        #        self.noPrint = True
+        if not RobotBase.isReal():
+            #if not self.noPrint: print( f"Pivot: {self.pivotMotor.getSelectedSensorPosition()}\tTarget: {self.pivotMotor.getClosedLoopTarget()}\tError: {self.pivotMotor.getClosedLoopError()}" )
+            if self.pivotMotor.getClosedLoopError() > 0.0:
+                self.noPrint = False
+            else:
+                self.noPrint = True
 
 
 

@@ -8,7 +8,6 @@ Dependencies:
 
 CAN Network:  CANIVORE
 Gyroscope:  PIGEON v2
-Cameras:  limelight-one, limelight-two
 """
 
 ### Imports
@@ -52,10 +51,10 @@ class SwerveDrive(SubsystemBase):
         _value:bool = False
         def __init__(self, name:str, value:bool = False) -> None:
             self._name = name
-            self._value = value
+            self.set( value )
         def set(self, value:bool) -> None:
             self._value = value
-            print( f"{self._name}: {self._value}")
+            SmartDashboard.putBoolean( self._name, value )
         def get(self) -> bool:
             return self._value
         def toggle(self) -> None:
@@ -111,10 +110,6 @@ class SwerveDrive(SubsystemBase):
             Pose2d(Translation2d(3,2), Rotation2d().fromDegrees(gyroStartHeading))
         )
 
-        # Limelight
-        self.limelight1 = NetworkTableInstance.getDefault().getTable( "limelight-one" )
-        self.limelight2 = NetworkTableInstance.getDefault().getTable( "limelight-two" )
-
         # Field on Shuffleboard
         SmartDashboard.putData("Field", Field2d())
 
@@ -161,40 +156,7 @@ class SwerveDrive(SubsystemBase):
             "Field/Robot",
             [ poseX, poseY, poseR ]
         )
-    
-    # Update Odometry From Vision Data
-    def updateVisionOdometry(self, limelightData:NetworkTable):
-        # Check for Valid Limelight Data
-        aprilTag = limelightData.getNumber("tid",-1) 
-        if int(aprilTag) == -1: return
-        
-        # Check for Alliance Settings, Get Bot Pose Data from Limelight
-        match DriverStation.getAlliance():
-            case DriverStation.Alliance.kRed:
-                botPose = limelightData.getNumberArray("botpose_wpired", None)
-            case DriverStation.Alliance.kBlue:
-                botPose = limelightData.getNumberArray("botpose_wpiblue", None)
-            case DriverStation.Alliance.kInvalid:
-                return None
-            case _:
-                return None
-
-        # Translate Bot Pose Data to Pose2d
-        llx = botPose[0]
-        lly = botPose[1]
-        llz = botPose[5]
-        llt = botPose[6]
-        llPose = Pose2d(llx, lly, Rotation2d(0).fromDegrees(llz))
-        
-        # Get Time Offset Information
-        llOffset = Timer.getFPGATimestamp() - (llt/1000)
-        
-        # Update Odometry
-        self.odometry.addVisionMeasurement(
-            llPose,
-            llOffset
-        )
-    
+       
     # Resync the Gyro
     def syncGyro(self) -> None:
         poseDegrees = self.getPose().rotation().degrees()
@@ -205,6 +167,10 @@ class SwerveDrive(SubsystemBase):
             self.gyro.setYaw( pose.rotation().degrees() )
             print( f"Gyro Off by: {degreesDiff} Degrees | Resetting Gryo to {poseDegrees}")
 
+    # Get Odometry Object
+    def getOdometry(self) -> SwerveDrive4PoseEstimator:
+        return self.odometry
+
     # Get Pose
     def getPose(self) -> Pose2d:
         return self.odometry.getEstimatedPosition()
@@ -212,7 +178,6 @@ class SwerveDrive(SubsystemBase):
     # Get Heading of Rotation
     def getHeading(self) -> Rotation2d:
         return self.gyro.getRotation2d()
-
 
     ### Run SwerveDrive Functions
     def runPercentageOutput(self, x:float = 0.0, y:float = 0.0, r:float = 0.0) -> ChassisSpeeds:
