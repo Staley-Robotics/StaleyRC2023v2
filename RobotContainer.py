@@ -24,12 +24,12 @@ class RobotContainer:
         self.armExtend = ArmExtend()
         self.claw = Claw()
         self.pdp = PowerDistPanel()
-        self.limelight1 = Limelight( "limelight-one", lambda: self.swerveDrive.getOdometry() )
-        self.limelight2 = Limelight( "limelight-two", lambda: self.swerveDrive.getOdometry() )
+        self.limelight1 = Limelight( "limelight-one", self.swerveDrive.getOdometry ) #lambda: self.swerveDrive.getOdometry() )
+        self.limelight2 = Limelight( "limelight-two", self.swerveDrive.getOdometry ) #lambda: self.swerveDrive.getOdometry() )
 
         # Controllers
-        driver1 = commands2.button.CommandXboxController(0)
-        driver2 = commands2.button.CommandXboxController(1)
+        self.driver1 = commands2.button.CommandXboxController(0)
+        self.driver2 = commands2.button.CommandXboxController(1)
 
         # List of Commands
         self.cmds = dict( {
@@ -53,6 +53,8 @@ class RobotContainer:
         SmartDashboard.putData(key="ArmPivot",    data=self.armPivot)
         SmartDashboard.putData(key="ArmExtend",   data=self.armExtend)
         SmartDashboard.putData(key="Claw",        data=self.claw)
+        SmartDashboard.putData(key="Limelight1",  data=self.limelight1)
+        SmartDashboard.putData(key="Limelight2",  data=self.limelight2)
 
         # SmartDashboard Commands
         SmartDashboard.putData(key="SCurve", data=self.cmds['scurve']) #SCurve(self.swerveDrive)
