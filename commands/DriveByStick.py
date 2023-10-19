@@ -6,11 +6,12 @@ import math
 # FRC Component Imports
 from commands2 import CommandBase
 from wpimath import applyDeadband
+from wpimath.geometry import Rotation2d
 from wpimath.filter import SlewRateLimiter
 from wpimath.kinematics import ChassisSpeeds
 
 # Our Imports
-from subsystems.swervedrive_2023 import SwerveDrive
+from subsystems.SwerveDrive import SwerveDrive
 
 ### Constants
 # SwerveDrive Module Inputs
@@ -21,11 +22,11 @@ slrValue = 2 # Slew Rate Limiter (Sensitivity to how fast the joysticks bounds b
 class DriveByStick(CommandBase):
     def __init__( self,
                   swerveDrive:SwerveDrive,
-                  l_UpDown:typing.Callable[[], float],
-                  l_LeftRight:typing.Callable[[], float],
-                  r_UpDown:typing.Callable[[], float],
-                  r_LeftRight:typing.Callable[[], float],
-                  halfSpeed:typing.Callable[[], bool] = (lambda: False)
+                  velocityX:typing.Callable[[], float],
+                  velocityY:typing.Callable[[], float],
+                  holonomicX:typing.Callable[[], float] = ( lambda: 0.0 ),
+                  holonomicY:typing.Callable[[], float] = ( lambda: 0.0 ), 
+                  rotate:typing.Callable[[], float] = ( lambda: 0.0 )
                 ):
         # CommandBase Initiation Configurations
         super().__init__()
@@ -34,41 +35,58 @@ class DriveByStick(CommandBase):
         
         # This Command Global Properties
         self.DriveSubsystem = swerveDrive
-        self.lx = l_UpDown
-        self.ly = l_LeftRight
-        self.rx = r_UpDown
-        self.ry = r_LeftRight
-        self.isHalfSpeed = halfSpeed
+        self.vX = velocityX
+        self.vY = velocityY
+        self.hX = holonomicX
+        self.hY = holonomicY
+        self.rO = rotate
 
         # Slew Rate Limiters
-        self.srl_l_ud = SlewRateLimiter( slrValue )
-        self.srl_l_lr = SlewRateLimiter( slrValue )
-        self.srl_r_ud = SlewRateLimiter( slrValue )
-        self.srl_r_lr = SlewRateLimiter( slrValue )
+        self.srl_vX = SlewRateLimiter( slrValue )
+        self.srl_vY = SlewRateLimiter( slrValue )
+        self.srl_hX = SlewRateLimiter( slrValue )
+        self.srl_hY = SlewRateLimiter( slrValue )
+        self.srl_rO = SlewRateLimiter( slrValue )
+
+        self.tPid = self.DriveSubsystem.getHolonomicPIDController().getThetaController()
+
+    def pidReset(self) -> None:
+        self.tPid.reset( 0 )
+
+    def initialize(self) -> None:
+        self.pidReset()
 
     def execute(self) -> None:
         # Get States
-        halfSpeed = self.isHalfSpeed()
+        halfSpeed = self.DriveSubsystem.isHalfspeed()
 
         # Get Input Values
-        x = self.lx()
-        y = self.ly()
-        r = self.ry()
-
-        # Square the Inputs
-        x *= abs( x )
-        y *= abs( y )
-        r *= abs( r )
+        x = self.vX()
+        y = self.vY()
+        hX = self.hX()
+        hY = self.hY()
+        r = self.rO()
 
         # Calculate Deadband
         x = applyDeadband( x, driveDeadband ) 
         y = applyDeadband( y, driveDeadband )
+        hX = applyDeadband( hX, driveDeadband )
+        hY = applyDeadband( hY, driveDeadband )
         r = applyDeadband( r, driveDeadband )
 
+        # Square the Inputs
+        x *= abs( x )
+        y *= abs( y )
+        hX *= abs( hX )
+        hY *= abs( hY )
+        r *= abs( r )
+
         # Slew Rate Limiter
-        x = self.srl_l_ud.calculate( x )
-        y = self.srl_l_lr.calculate( y )
-        r = self.srl_r_lr.calculate( r )
+        x = self.srl_vX.calculate( x )
+        y = self.srl_vY.calculate( y )
+        hX = self.srl_hX.calculate( hX )
+        hY = self.srl_hY.calculate( hY )
+        r = self.srl_rO.calculate( r )
 
         # Calculate Half Speed
         magnitude:float = 1.0 if not halfSpeed else 0.5
@@ -76,10 +94,20 @@ class DriveByStick(CommandBase):
         y *= magnitude
         #r *= magnitude
 
-        # Send ChassisSpeeds
-        self.DriveSubsystem.runPercentageOutput(x, y, r)
+        if abs(hX) > 0.1 or abs(hY) > 0.1:
+            pid = self.tPid
+            mag = math.sqrt( hX*hX + hY*hY )
+            robotAngle:float = self.DriveSubsystem.getRobotAngle().radians()
+            goalAngle:float = Rotation2d( x=hX, y=hY ).radians()
+            target = pid.calculate(robotAngle, goalAngle)
+            r = target * mag
+            r = min( r, 1.0 )
+        elif abs(r) > 1.0:
+            self.pidReset()
 
-    def initialize(self) -> None: pass
+        # Send ChassisSpeeds
+        self.DriveSubsystem.runPercentageInputs(x, y, r)
+
     def end(self, interrupted:bool) -> None: pass
     def isFinished(self) -> bool: return False
     def runsWhenDisabled(self) -> bool: return False

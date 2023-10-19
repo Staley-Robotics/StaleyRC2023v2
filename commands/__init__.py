@@ -8,5 +8,6 @@ from .DriveBalance import *
 from .DriveByStick import *
 from .DriveLockdown import *
 from .DriveSetup import *
+from .DriveToRotation import *
 from .DriveTrajectory import *
 

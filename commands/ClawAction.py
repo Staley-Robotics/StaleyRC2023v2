@@ -7,7 +7,7 @@ from commands2 import CommandBase
 from wpilib import Timer
 
 # Our Imports
-from subsystems.claw import Claw
+from subsystems.Claw import Claw
 
 
 class ClawAction(CommandBase):

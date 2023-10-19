@@ -30,7 +30,7 @@ t_kP = 1
 t_kI = 0
 t_kD = 0
 
-class DriveTrajectory(CommandBase):
+class DriveToPosition(CommandBase):
     _m_timer = Timer()
     _m_kinematics: SwerveDrive4Kinematics = None
     _m_controller: HolonomicDriveController = None
@@ -54,7 +54,7 @@ class DriveTrajectory(CommandBase):
         self.swerveDrive = swerveDrive
         self.trajectoryCmd = trajectoryCmd
         self.addRequirements( swerveDrive )
-        self.setName( "DriveTrajectory" )
+        self.setName( "DriveToPosition" )
 
     def initialize(self):
         self._m_trajectory = self.trajectoryCmd()
@@ -69,10 +69,10 @@ class DriveTrajectory(CommandBase):
         
         curTime = self._m_timer.get()
         desiredState = self._m_trajectory.sample(curTime)
-        targetChassisSpeeds = self._m_controller.calculate(
+        targetChassisSpeeds = self._m_controller.calculate()  (
             self.swerveDrive.getPose(),
             desiredState,
-            self.swerveDrive.getRobotAngle()
+            self.swerveDrive.getHeading()
         )
         self.swerveDrive.runChassisSpeeds( targetChassisSpeeds )
 

@@ -19,15 +19,16 @@ import math
 from commands2 import SubsystemBase, CommandBase
 from ctre.sensors import WPI_Pigeon2
 from wpilib import SmartDashboard, Timer, DriverStation, RobotBase, SendableBuilderImpl, Field2d, FieldObject2d
-#import wpiutil #import SendableBuilder
+from wpiutil import SendableBuilder
+from wpimath.controller import HolonomicDriveController, PIDController, ProfiledPIDControllerRadians
 from wpimath.geometry import Translation2d, Rotation2d, Pose2d
 from wpimath.kinematics import SwerveDrive4Kinematics, ChassisSpeeds, SwerveModuleState
 from wpimath.estimator import SwerveDrive4PoseEstimator
-from wpimath.trajectory import Trajectory
+from wpimath.trajectory import Trajectory, TrapezoidProfileRadians
 from ntcore import NetworkTableInstance, NetworkTable
 
 # Our Imports
-from .swervemodule_2023_v2 import SwerveModule
+from .SwerveModule import SwerveModule
 
 ### Constants
 # SwerveDrive Module Input Deadband
@@ -65,6 +66,7 @@ class SwerveDrive(SubsystemBase):
     halfSpeed:BooleanProperty = BooleanProperty("halfSpeed", False)
     motionMagic:BooleanProperty = BooleanProperty("motionMagic", False)
     trajectory:Trajectory = None
+    holonomicPID:HolonomicDriveController = None
 
     def __init__(self):
         super().__init__()
@@ -110,6 +112,30 @@ class SwerveDrive(SubsystemBase):
             Pose2d(Translation2d(3,2), Rotation2d().fromDegrees(gyroStartHeading))
         )
 
+        # Holonomic PID
+        constraints = TrapezoidProfileRadians.Constraints(
+            kMaxAngularSpeedMetersPerSecond,
+            kMaxAngularAccelMetersPerSecondSq
+        )
+        xPid = PIDController( 1, 0, 0 )
+        xPid.reset()
+        yPid = PIDController( 1, 0, 0 )
+        yPid.reset()
+        tPid = ProfiledPIDControllerRadians( 1, 0, 0, constraints )
+        tPid.enableContinuousInput( -math.pi, math.pi )
+        tPid.reset(0)
+        self.holonomicPID = HolonomicDriveController(
+            xPid,
+            yPid,
+            tPid
+        )
+        self.holonomicPID.setTolerance(
+            Pose2d(
+                Translation2d( 0.025, 0.025 ),
+                Rotation2d(0).fromDegrees( 0.025 )
+            )
+        )
+
         # Field on Shuffleboard
         SmartDashboard.putData("Field", Field2d())
 
@@ -128,14 +154,13 @@ class SwerveDrive(SubsystemBase):
     def isFieldRelative(self):
         return self.fieldRelative.get()
 
+    ### PID Controller
+    def getHolonomicPIDController(self) -> HolonomicDriveController:
+        return self.holonomicPID
 
     ### ODOMETRY
     # Update Odometry Information on each loop
     def periodic(self):
-        # Odometry from Limelight
-        #self.updateVisionOdometry( self.limelight1 )
-        #self.updateVisionOdometry( self.limelight2 )
-
         # Odometry from Module Position Data
         pose = self.odometry.updateWithTime(
             Timer.getFPGATimestamp(),
@@ -153,7 +178,7 @@ class SwerveDrive(SubsystemBase):
         poseY = round( pose.Y(), 3 )
         poseR = round( pose.rotation().degrees(), 3 )
         SmartDashboard.putNumberArray(
-            "Field/Robot",
+            "Field/RealRobot",
             [ poseX, poseY, poseR ]
         )
        
@@ -176,17 +201,17 @@ class SwerveDrive(SubsystemBase):
         return self.odometry.getEstimatedPosition()
     
     # Get Heading of Rotation
-    def getHeading(self) -> Rotation2d:
+    def getRobotAngle(self) -> Rotation2d:
         return self.gyro.getRotation2d()
 
     ### Run SwerveDrive Functions
-    def runPercentageOutput(self, x:float = 0.0, y:float = 0.0, r:float = 0.0) -> ChassisSpeeds:
+    def runPercentageInputs(self, x:float = 0.0, y:float = 0.0, r:float = 0.0) -> ChassisSpeeds:
         if self.fieldRelative.get():
             speeds = ChassisSpeeds.fromFieldRelativeSpeeds(
                 vx = x * maxVelocity,
                 vy = y * maxVelocity,
                 omega = r * maxAngularVelocity,
-                robotAngle = self.getHeading()
+                robotAngle = self.getRobotAngle()
             )
         else:
             speeds = ChassisSpeeds(
@@ -199,7 +224,7 @@ class SwerveDrive(SubsystemBase):
         self.runChassisSpeeds(speeds)
 
     # Run SwerveDrive using ChassisSpeeds
-    def runChassisSpeeds(self, speeds:ChassisSpeeds) -> typing.List[SwerveModuleState]:
+    def runChassisSpeeds(self, speeds:ChassisSpeeds) -> None:
         rotationCenter = Translation2d(0, 0)
         modStates = self.kinematics.toSwerveModuleStates(speeds, rotationCenter) # Convert to SwerveModuleState
         self.runSwerveModuleStates(list(modStates))
@@ -209,7 +234,7 @@ class SwerveDrive(SubsystemBase):
     def runSwerveModuleStates(self, states:typing.List[SwerveModuleState]) -> None:
         # Print Output in Simulation Environment
         if not RobotBase.isReal():
-            if not self.noPrint: print( states )
+            #if not self.noPrint: print( states )
             if states[0].speed != 0.0 and states[1].speed != 0.0 and states[2].speed != 0.0 and states[3].speed != 0.0:
                 self.noPrint = False
             else:

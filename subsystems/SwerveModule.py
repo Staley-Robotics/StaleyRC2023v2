@@ -74,8 +74,7 @@ class SwerveModule(SubsystemBase):
         self.angleSensor.configSensorInitializationStrategy(SensorInitializationStrategy.BootToZero)
         self.angleSensor.configAbsoluteSensorRange(AbsoluteSensorRange.Unsigned_0_to_360)
         self.angleSensor.configSensorDirection(False)
-        self.angleSensor.configSensorInitializationStrategy
-        self.angleSensor.setPosition(self.angleSensor.getAbsolutePosition() - angleOffset)
+        if not RobotBase.isSimulation(): self.angleSensor.setPosition(self.angleSensor.getAbsolutePosition() - angleOffset)
 
         # Angle Motor
         self.angleMotor = WPI_TalonFX( angleId, "canivore1")
@@ -181,8 +180,10 @@ class SwerveModule(SubsystemBase):
     def getPosition(self) -> SwerveModulePosition:
         dPosition = self.driveMotor.getSelectedSensorPosition(0)
         driveMeters = getDistanceTicksToMeters(dPosition, driveMotorTicks, wheelRadius, driveGearRatio)
-        rPosition = self.angleSensor.getPosition()  ## Should we use self.angleSensor ??
-        rotatePosition = Rotation2d(0).fromDegrees(rPosition)
+        rPosition = self.angleMotor.getSelectedSensorPosition(0)  ## Should we use self.angleSensor ??
+        rotatePosition = getRotationFromTicks(rPosition, angleSensorTicks)
+        #rPosition = self.angleSensor.getPosition()  ## Should we use self.angleSensor ??
+        #rotatePosition = Rotation2d(0).fromDegrees(rPosition)
 
         return SwerveModulePosition(
             distance=driveMeters,

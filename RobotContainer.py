@@ -23,9 +23,9 @@ class RobotContainer:
         self.armPivot = ArmPivot()
         self.armExtend = ArmExtend()
         self.claw = Claw()
-        self.pdp = PowerDistPanel()
-        self.limelight1 = Limelight( "limelight-one", self.swerveDrive.getOdometry ) #lambda: self.swerveDrive.getOdometry() )
-        self.limelight2 = Limelight( "limelight-two", self.swerveDrive.getOdometry ) #lambda: self.swerveDrive.getOdometry() )
+        #self.pdp = PowerDistPanel()
+        self.limelight1 = Limelight( "limelight-one", self.swerveDrive.getOdometry )
+        self.limelight2 = Limelight( "limelight-two", self.swerveDrive.getOdometry )
 
         # Controllers
         self.driver1 = commands2.button.CommandXboxController(0)
@@ -64,6 +64,8 @@ class RobotContainer:
         #SmartDashboard.putData(key="ArmPivot-Up", data=self.cmds['arm-pivot-up'])
         #SmartDashboard.putData(key="ArmPivot-Down", data=self.cmds['arm-pivot-down'])
         SmartDashboard.putData(key="ExtendReset", data=self.cmds['extendreset'])
+        SmartDashboard.putData(key="Face Home", data=DriveToRotation(self.swerveDrive, lambda: 180.0))
+        SmartDashboard.putData(key="Face Away", data=DriveToRotation(self.swerveDrive, lambda: 0.0))
 
         # Configure Default Commands
         self.configureDefaultCommands()
@@ -83,13 +85,14 @@ class RobotContainer:
         self.swerveDrive.setDefaultCommand(
             DriveByStick(
                 self.swerveDrive,
-                lambda: -self.getDriver1().getLeftY(),
-                lambda: -self.getDriver1().getLeftX(),
-                lambda: -self.getDriver1().getRightY(),
-                lambda: self.getDriver1().getLeftTriggerAxis() - self.getDriver1().getRightTriggerAxis(), #-self.getDriver1().getRightX(),
-                lambda: self.swerveDrive.halfSpeed.get()
+                velocityX = lambda: -self.getDriver1().getLeftY(),
+                velocityY = lambda: -self.getDriver1().getLeftX(),
+                holonomicX = lambda: -self.getDriver1().getRightY(),
+                holonomicY = lambda: -self.getDriver1().getRightX(),
+                rotate = lambda: self.getDriver1().getLeftTriggerAxis() - self.getDriver1().getRightTriggerAxis() #-self.getDriver1().getRightX()
             )
         )
+
         # Arm by Joystick
         self.armPivot.setDefaultCommand(
             ArmPivotByStick(
@@ -114,13 +117,21 @@ class RobotContainer:
     def configureButtonBindings(self):
         #### Example: https://github.com/robotpy/examples/blob/main/commands-v2/hatchbot-inlined/robotcontainer.py
         # Driver 1
-        self.getDriver1().start().toggleOnTrue( self.cmds['fieldrelative'] )
+        a = self.getDriver1().start().toggleOnTrue( self.cmds['fieldrelative'] )
         self.getDriver1().rightBumper().toggleOnTrue( self.cmds['halfspeed'] )
         self.getDriver1().leftBumper().whileTrue( self.cmds['scurve'] )
         self.getDriver1().back().toggleOnTrue( self.cmds['motionmagic'] )
+        commands2.button.POVButton( self.getDriver1(),   0 ).whenPressed( DriveToRotation(self.swerveDrive, lambda: 0.0) )
+        commands2.button.POVButton( self.getDriver1(),  90 ).whileTrue( commands2.cmd.runOnce( lambda: print("Controller 1:  90") ) )
+        commands2.button.POVButton( self.getDriver1(), 180 ).whenPressed( DriveToRotation(self.swerveDrive, lambda: 180.0) )
+        commands2.button.POVButton( self.getDriver1(), 270 ).whileTrue( commands2.cmd.runOnce( lambda: print("Controller 1: 270") ) )
 
         # Driver 2
         self.getDriver2().A().toggleOnTrue( self.cmds['clawToggle'] )
+        commands2.button.POVButton( self.getDriver2(),   0 ).whileTrue( commands2.cmd.runOnce( lambda: print("Controller 2:   0") ) )
+        commands2.button.POVButton( self.getDriver2(),  90 ).whileTrue( commands2.cmd.runOnce( lambda: print("Controller 2:  90") ) )
+        commands2.button.POVButton( self.getDriver2(), 180 ).whileTrue( commands2.cmd.runOnce( lambda: print("Controller 2: 180") ) )
+        commands2.button.POVButton( self.getDriver2(), 270 ).whileTrue( commands2.cmd.runOnce( lambda: print("Controller 2: 270") ) )
 
     # Return Controllers
     def getDriver1(self) -> commands2.button.CommandXboxController:

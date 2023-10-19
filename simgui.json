@@ -1,12 +1,27 @@
 {
   "HALProvider": {
     "Other Devices": {
-      "Talon SRX[31]": {
+      "CANCoder[18]": {
         "header": {
           "open": true
         }
       },
-      "Talon SRX[31]/Quad Encoder": {
+      "Talon FX[7]": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX[7]/Integrated Sensor": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX[8]": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX[8]/Integrated Sensor": {
         "header": {
           "open": true
         }
@@ -48,6 +63,7 @@
       "/LiveWindow/Ungrouped/Angle": "Motor Controller",
       "/LiveWindow/Ungrouped/Drive": "Motor Controller",
       "/LiveWindow/Ungrouped/PID Controller": "PIDController",
+      "/LiveWindow/Ungrouped/Scheduler": "Scheduler",
       "/LiveWindow/Ungrouped/Talon FX [9]": "Motor Controller",
       "/LiveWindow/Ungrouped/Talon SRX [31]": "Motor Controller",
       "/LiveWindow/Ungrouped/class frc2::SubsystemBase": "Subsystem",
@@ -62,18 +78,43 @@
       "/SmartDashboard/Claw": "Subsystem",
       "/SmartDashboard/DriveSCurve": "Command",
       "/SmartDashboard/ExtendReset": "Command",
+      "/SmartDashboard/Face Away": "Command",
+      "/SmartDashboard/Face Home": "Command",
       "/SmartDashboard/Field": "Field2d",
+      "/SmartDashboard/Limelight1": "Subsystem",
+      "/SmartDashboard/Limelight2": "Subsystem",
       "/SmartDashboard/Lockdown": "Command",
       "/SmartDashboard/Pneumatics": "Subsystem",
+      "/SmartDashboard/Rotate Facing Away": "Command",
+      "/SmartDashboard/Rotate Facing Home": "Command",
       "/SmartDashboard/SCurve": "Command",
       "/SmartDashboard/SD-Arm": "Subsystem",
       "/SmartDashboard/SD-Claw": "Subsystem",
       "/SmartDashboard/SD-Pneumatics": "Subsystem",
       "/SmartDashboard/SD-SwerveDrive": "Subsystem",
       "/SmartDashboard/SwerveDrive": "Subsystem"
+    },
+    "windows": {
+      "/SmartDashboard/Field": {
+        "RealRobot": {
+          "color": [
+            0.0,
+            255.0,
+            255.0,
+            255.0
+          ]
+        },
+        "window": {
+          "visible": true
+        }
+      }
     }
   },
   "NetworkTables": {
+    "Transitory Values": {
+      "open": false
+    },
+    "precision": 3,
     "transitory": {
       "LiveWindow": {
         "SwerveDrive": {
@@ -97,6 +138,13 @@
   "NetworkTables Info": {
     "Server": {
       "open": true
+    }
+  },
+  "Plot": {
+    "Plot <0>": {
+      "window": {
+        "visible": false
+      }
     }
   }
 }

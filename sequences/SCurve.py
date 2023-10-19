@@ -52,6 +52,7 @@ class SCurve(SequentialCommandGroup):
             kMaxSpeedMetersPerSecond,
             kMaxAccelMetersPerSecondSq
         )
+        config.setKinematics(self.swerveDrive.kinematics)
 
         self.m_trajectory = TrajectoryGenerator.generateTrajectory(
             start=startPose, # Start
