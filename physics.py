@@ -152,13 +152,8 @@ class PhysicsEngine:
         for x in self._simProfiles:
             x.run(period=tm_diff)
 
-        speed = self.myRobot.m_robotContainer.swerveDrive.kinematics.toChassisSpeeds(
-            self.myRobot.m_robotContainer.swerveDrive.moduleFL.moduleState,
-            self.myRobot.m_robotContainer.swerveDrive.moduleFR.moduleState,
-            self.myRobot.m_robotContainer.swerveDrive.moduleBL.moduleState,
-            self.myRobot.m_robotContainer.swerveDrive.moduleBR.moduleState
-        )
-        ftSpeed = ChassisSpeeds(vx = speed.vx_fps, vy = speed.vy_fps, omega= speed.omega )
+        speed = self.myRobot.m_robotContainer.swerveDrive.getChassisSpeeds()
+        ftSpeed = ChassisSpeeds(vx = speed.vx_fps, vy = speed.vy_fps, omega= speed.omega ) # Move FPS values to Meter Values (Physics Compatibility)
 
         pose = self.physics_controller.drive( ftSpeed, tm_diff )
         newRotation = pose.rotation()

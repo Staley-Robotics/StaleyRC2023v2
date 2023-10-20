@@ -119,7 +119,8 @@ class RobotContainer:
         # Driver 1
         a = self.getDriver1().start().toggleOnTrue( self.cmds['fieldrelative'] )
         self.getDriver1().rightBumper().toggleOnTrue( self.cmds['halfspeed'] )
-        self.getDriver1().leftBumper().whileTrue( self.cmds['scurve'] )
+        #self.getDriver1().leftBumper().whileTrue( self.cmds['scurve'] )
+        self.getDriver1().leftBumper().toggleOnTrue( DriveToPose(self.swerveDrive, lambda: Pose2d( Translation2d(8, 2), Rotation2d(0).fromDegrees(180))) )
         self.getDriver1().back().toggleOnTrue( self.cmds['motionmagic'] )
         commands2.button.POVButton( self.getDriver1(),   0 ).whenPressed( DriveToRotation(self.swerveDrive, lambda: 0.0) )
         commands2.button.POVButton( self.getDriver1(),  90 ).whileTrue( commands2.cmd.runOnce( lambda: print("Controller 1:  90") ) )

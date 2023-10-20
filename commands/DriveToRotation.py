@@ -45,13 +45,11 @@ class DriveToRotation(CommandBase):
         goalAngle:float = self.rotation.radians()
         target = pid.calculate(robotAngle, goalAngle)
         r = target * mag
-        r = min( r, 1.0 )
+        r = min( max( r, -1.0 ), 1.0 )
 
         # Send ChassisSpeeds
         self.DriveSubsystem.runPercentageInputs(0, 0, r)
-
-    def initialize(self) -> None: pass
-    
+  
     def end(self, interrupted:bool) -> None:
         self.DriveSubsystem.stop()
     def isFinished(self) -> bool:

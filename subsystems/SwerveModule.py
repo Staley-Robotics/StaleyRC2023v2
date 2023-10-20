@@ -176,6 +176,9 @@ class SwerveModule(SubsystemBase):
 
     def getModulePosition(self) -> Translation2d:
         return self.modulePosition
+    
+    def getModuleState(self) -> SwerveModuleState:
+        return self.moduleState
 
     def getPosition(self) -> SwerveModulePosition:
         dPosition = self.driveMotor.getSelectedSensorPosition(0)

@@ -48,10 +48,11 @@ class DriveByStick(CommandBase):
         self.srl_hY = SlewRateLimiter( slrValue )
         self.srl_rO = SlewRateLimiter( slrValue )
 
-        self.tPid = self.DriveSubsystem.getHolonomicPIDController().getThetaController()
+        self.hPid = self.DriveSubsystem.getHolonomicPIDController()
+        self.tPid = self.hPid.getThetaController()
 
     def pidReset(self) -> None:
-        self.tPid.reset( 0 )
+        self.tPid.reset( self.DriveSubsystem.getRobotAngle().radians() )
 
     def initialize(self) -> None:
         self.pidReset()
@@ -84,8 +85,8 @@ class DriveByStick(CommandBase):
         # Slew Rate Limiter
         x = self.srl_vX.calculate( x )
         y = self.srl_vY.calculate( y )
-        hX = self.srl_hX.calculate( hX )
-        hY = self.srl_hY.calculate( hY )
+        #hX = self.srl_hX.calculate( hX )
+        #hY = self.srl_hY.calculate( hY )
         r = self.srl_rO.calculate( r )
 
         # Calculate Half Speed
@@ -95,14 +96,14 @@ class DriveByStick(CommandBase):
         #r *= magnitude
 
         if abs(hX) > 0.1 or abs(hY) > 0.1:
-            pid = self.tPid
+            #pid = self.tPid
             mag = math.sqrt( hX*hX + hY*hY )
             robotAngle:float = self.DriveSubsystem.getRobotAngle().radians()
             goalAngle:float = Rotation2d( x=hX, y=hY ).radians()
-            target = pid.calculate(robotAngle, goalAngle)
+            target = self.tPid.calculate(robotAngle, goalAngle)
             r = target * mag
-            r = min( r, 1.0 )
-        elif abs(r) > 1.0:
+            r = min( max( r, -1.0 ), 1.0 )
+        elif abs(r) > 0.1:
             self.pidReset()
 
         # Send ChassisSpeeds

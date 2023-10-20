@@ -41,9 +41,9 @@ maxAngularVelocity = 2 * math.pi
 # Trajectory Maximums
 kMaxSpeedMetersPerSecond = 3
 kMaxAccelMetersPerSecondSq = 3
-kMaxAngularSpeedMetersPerSecond = math.pi
-kMaxAngularAccelMetersPerSecondSq = math.pi
-maxAngularVelocity = 2 * math.pi
+kMaxAngularSpeedMetersPerSecond = 2 * math.pi  # Code Based Rotation Maximum
+kMaxAngularAccelMetersPerSecondSq = 4 * math.pi
+maxAngularVelocity = 2 * math.pi  # Drivers Max Rotation
 
 ### Class: SwerveDrive
 class SwerveDrive(SubsystemBase):
@@ -65,7 +65,6 @@ class SwerveDrive(SubsystemBase):
     fieldRelative:BooleanProperty = BooleanProperty("fieldRelative", True)
     halfSpeed:BooleanProperty = BooleanProperty("halfSpeed", False)
     motionMagic:BooleanProperty = BooleanProperty("motionMagic", False)
-    trajectory:Trajectory = None
     holonomicPID:HolonomicDriveController = None
 
     def __init__(self):
@@ -117,24 +116,30 @@ class SwerveDrive(SubsystemBase):
             kMaxAngularSpeedMetersPerSecond,
             kMaxAngularAccelMetersPerSecondSq
         )
-        xPid = PIDController( 1, 0, 0 )
+        xPid = PIDController( 0.45, 0, 0 )
+        #xPid.setIntegratorRange( -kMaxSpeedMetersPerSecond, kMaxSpeedMetersPerSecond )
+        xPid.setTolerance( 0.05 )
         xPid.reset()
-        yPid = PIDController( 1, 0, 0 )
+        yPid = PIDController( 0.45, 0, 0 )
+        #yPid.setIntegratorRange( -kMaxSpeedMetersPerSecond, kMaxSpeedMetersPerSecond )
+        yPid.setTolerance( 0.05 )
         yPid.reset()
         tPid = ProfiledPIDControllerRadians( 1, 0, 0, constraints )
+        #tPid.setIntegratorRange( -kMaxAngularSpeedMetersPerSecond, kMaxAngularSpeedMetersPerSecond )
         tPid.enableContinuousInput( -math.pi, math.pi )
-        tPid.reset(0)
+        tPid.setTolerance( 0.00436 )
+        tPid.reset( self.getRobotAngle().radians() )
         self.holonomicPID = HolonomicDriveController(
             xPid,
             yPid,
             tPid
         )
-        self.holonomicPID.setTolerance(
-            Pose2d(
-                Translation2d( 0.025, 0.025 ),
-                Rotation2d(0).fromDegrees( 0.025 )
-            )
-        )
+        #self.holonomicPID.setTolerance(
+        #    Pose2d(
+        #        Translation2d( 0.05, 0.05 ),
+        #        Rotation2d(0).fromDegrees( 0.25 )
+        #    )
+        #)
 
         # Field on Shuffleboard
         SmartDashboard.putData("Field", Field2d())
@@ -203,6 +208,14 @@ class SwerveDrive(SubsystemBase):
     # Get Heading of Rotation
     def getRobotAngle(self) -> Rotation2d:
         return self.gyro.getRotation2d()
+
+    def getChassisSpeeds(self) -> ChassisSpeeds:
+        return self.kinematics.toChassisSpeeds(
+            self.moduleFL.getModuleState(),
+            self.moduleFR.getModuleState(),
+            self.moduleBL.getModuleState(),
+            self.moduleBR.getModuleState()
+        )
 
     ### Run SwerveDrive Functions
     def runPercentageInputs(self, x:float = 0.0, y:float = 0.0, r:float = 0.0) -> ChassisSpeeds:
