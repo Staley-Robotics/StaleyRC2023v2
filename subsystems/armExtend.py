@@ -11,18 +11,14 @@ CAN Network:  Default / RIO
 
 ### Imports
 # Python Imports
-import typing
 import math
 
 # FRC Component Imports
-from commands2 import SubsystemBase, PIDSubsystem
-from ctre import WPI_TalonFX, WPI_TalonSRX, FeedbackDevice, RemoteFeedbackDevice, NeutralMode, ControlMode, DemandType
-from wpilib import PowerDistribution, RobotBase, RobotState
-#from wpilib.PowerDistribution import ModuleType
-from wpimath.controller import PIDController
+from commands2 import SubsystemBase
+from ctre import WPI_TalonSRX, TalonSRX, FeedbackDevice, NeutralMode, ControlMode
+from wpilib import RobotState
 
 # Our Imports
-from util.MotorUtils import MotorUtils
 
 
 ### Constants
@@ -61,7 +57,7 @@ class ArmExtend(SubsystemBase):
         super().__init__()
 
         # Extend Motor
-        self.extendMotor = WPI_TalonSRX(31)
+        self.extendMotor:WPI_TalonSRX = WPI_TalonSRX(31)
         self.extendMotor.configFactoryDefault()
         self.extendMotor.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0)
         self.extendMotor.setSensorPhase(False)
@@ -92,7 +88,7 @@ class ArmExtend(SubsystemBase):
         #self.getController().initSendable()
         self.setSubsystem( "ArmExtend" )
         self.setName( "ArmExtend" )
-        self.addChild( "Extend", self.extendMotor )
+        self.addChild( "ExtendMotor", self.extendMotor )
 
     def periodic(self) -> None:
         if RobotState.isDisabled(): return None

@@ -18,14 +18,12 @@ import math
 # FRC Component Imports
 from commands2 import SubsystemBase, CommandBase
 from ctre.sensors import WPI_Pigeon2
-from wpilib import SmartDashboard, Timer, DriverStation, RobotBase, SendableBuilderImpl, Field2d, FieldObject2d
-from wpiutil import SendableBuilder
+from wpilib import SmartDashboard, Timer, DriverStation, RobotBase, Field2d
 from wpimath.controller import HolonomicDriveController, PIDController, ProfiledPIDControllerRadians
 from wpimath.geometry import Translation2d, Rotation2d, Pose2d
 from wpimath.kinematics import SwerveDrive4Kinematics, ChassisSpeeds, SwerveModuleState
 from wpimath.estimator import SwerveDrive4PoseEstimator
-from wpimath.trajectory import Trajectory, TrapezoidProfileRadians
-from ntcore import NetworkTableInstance, NetworkTable
+from wpimath.trajectory import TrapezoidProfileRadians
 
 # Our Imports
 from .SwerveModule import SwerveModule
@@ -108,7 +106,7 @@ class SwerveDrive(SubsystemBase):
                 self.moduleBL.getPosition(),
                 self.moduleBR.getPosition()
             ],
-            Pose2d(Translation2d(3,2), Rotation2d().fromDegrees(gyroStartHeading))
+            Pose2d(Translation2d(2.50,1.50), Rotation2d().fromDegrees(gyroStartHeading))
         )
 
         # Holonomic PID
@@ -116,15 +114,15 @@ class SwerveDrive(SubsystemBase):
             kMaxAngularSpeedMetersPerSecond,
             kMaxAngularAccelMetersPerSecondSq
         )
-        xPid = PIDController( 0.45, 0, 0 )
+        xPid = PIDController( 0.40, 0, 0 )
         #xPid.setIntegratorRange( -kMaxSpeedMetersPerSecond, kMaxSpeedMetersPerSecond )
         xPid.setTolerance( 0.05 )
         xPid.reset()
-        yPid = PIDController( 0.45, 0, 0 )
+        yPid = PIDController( 0.40, 0, 0 )
         #yPid.setIntegratorRange( -kMaxSpeedMetersPerSecond, kMaxSpeedMetersPerSecond )
         yPid.setTolerance( 0.05 )
         yPid.reset()
-        tPid = ProfiledPIDControllerRadians( 1, 0, 0, constraints )
+        tPid = ProfiledPIDControllerRadians( 2, 0, 0, constraints )
         #tPid.setIntegratorRange( -kMaxAngularSpeedMetersPerSecond, kMaxAngularSpeedMetersPerSecond )
         tPid.enableContinuousInput( -math.pi, math.pi )
         tPid.setTolerance( 0.00436 )
@@ -162,6 +160,10 @@ class SwerveDrive(SubsystemBase):
     ### PID Controller
     def getHolonomicPIDController(self) -> HolonomicDriveController:
         return self.holonomicPID
+
+    ### Kinematics
+    def getKinematics(self) -> SwerveDrive4Kinematics:
+        return self.kinematics
 
     ### ODOMETRY
     # Update Odometry Information on each loop
@@ -237,7 +239,8 @@ class SwerveDrive(SubsystemBase):
         self.runChassisSpeeds(speeds)
 
     # Run SwerveDrive using ChassisSpeeds
-    def runChassisSpeeds(self, speeds:ChassisSpeeds) -> None:
+    def runChassisSpeeds(self, speeds:ChassisSpeeds, convertFieldRelative:bool = False) -> None:
+        if convertFieldRelative: speeds = ChassisSpeeds.fromFieldRelativeSpeeds( speeds, self.getRobotAngle() ) # Needed for Trajectory State not being field relative
         rotationCenter = Translation2d(0, 0)
         modStates = self.kinematics.toSwerveModuleStates(speeds, rotationCenter) # Convert to SwerveModuleState
         self.runSwerveModuleStates(list(modStates))

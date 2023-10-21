@@ -54,8 +54,10 @@ class DriveToPose(CommandBase):
         y = min( max( y, -1.0 ), 1.0 )
         r = min( max( r, -1.0 ), 1.0 )
 
-        print( f"{round(x,3)}, {round(y,3)}, {round(r,3)}")
+        # Percentage Run
         self.swerveDrive.runPercentageInputs( x, y, r )
+        
+        # Chassis Speed Run
         #speeds = ChassisSpeeds.fromFieldRelativeSpeeds( x, y, r, self.swerveDrive.getRobotAngle() )
         #self.swerveDrive.runChassisSpeeds( speeds )
 

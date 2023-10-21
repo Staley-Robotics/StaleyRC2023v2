@@ -10,7 +10,6 @@ from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator, TrapezoidP
 
 # Import Subsystems and Commands
 from subsystems import *
-from sequences.SCurve import SCurve
 from commands import ArmExtendByStick, ArmPivotByStick
 
 
@@ -20,7 +19,7 @@ class AutoSample1(SequentialCommandGroup):
         self.setName( "AutoSample1" )
         self.addRequirements( [swerveDrive, arm, claw] )
         
-        self.addCommands( SCurve(swerveDrive) )
+        #self.addCommands( SCurve(swerveDrive) )
         self.addCommands( swerveDrive.stop() )
         self.addCommands( commands2.cmd.wait( 2.0 ) )
         #self.addCommands(
@@ -29,7 +28,7 @@ class AutoSample1(SequentialCommandGroup):
         #        ArmPivotByStick()
         #    )
         #)
-        self.addCommands( SCurve(swerveDrive) )
+        #self.addCommands( SCurve(swerveDrive) )
         self.addCommands( swerveDrive.stop() )
         self.addCommands( commands2.cmd.wait( 15.0 ) )
 

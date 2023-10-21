@@ -16,15 +16,13 @@ Angle:  Closed Loop (FALCON Integrated)
 import math
 
 # FRC Component Imports
-from commands2 import SubsystemBase, PIDSubsystem
+from commands2 import SubsystemBase
 from ctre import WPI_TalonFX, ControlMode, FeedbackDevice, RemoteFeedbackDevice, NeutralMode
 from ctre.sensors import WPI_CANCoder, SensorInitializationStrategy, AbsoluteSensorRange
 from wpilib import RobotBase, RobotState
 from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
 from wpimath.geometry import Translation2d, Rotation2d
-from wpimath.filter import SlewRateLimiter
 
-from wpimath.controller import PIDController
 
 ### Constants
 # Module Physical Constants
@@ -32,7 +30,7 @@ driveMotorTicks = 2048
 angleMotorTicks = 2048
 angleSensorTicks = 4096
 driveGearRatio = 1/6.55 #Flipped Pulley (5.50, 6.55, 7.80), Flipped Gear (6.75, 7.36, 8.10)
-wheelRadius = 0.05
+wheelRadius = 0.0508
 
 # Controller Constants
 slewratesteps = 200000
@@ -133,9 +131,6 @@ class SwerveModule(SubsystemBase):
         
         # Module State
         self.moduleState = SwerveModuleState( 0, Rotation2d(0) )
-
-        # Slew Rate Limiter (manages gradual increase and decreases in speed)
-        self.driveSRL = SlewRateLimiter( slewratesteps )
 
     def periodic(self) -> None:
         # Only Run Code During Enabled Mode

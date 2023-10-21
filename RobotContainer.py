@@ -34,7 +34,6 @@ class RobotContainer:
         # List of Commands
         self.cmds = dict( {
             'auto1': AutoSample1(self.swerveDrive, self.armPivot, self.claw),
-            'scurve': SCurve(self.swerveDrive),
             'lockdown': DriveLockdown(self.swerveDrive),
             'clawToggle': ClawAction(self.claw, ClawAction.Action.kToggle),
             'halfspeed': ToggleHalfSpeed(self.swerveDrive),
@@ -57,7 +56,6 @@ class RobotContainer:
         SmartDashboard.putData(key="Limelight2",  data=self.limelight2)
 
         # SmartDashboard Commands
-        SmartDashboard.putData(key="SCurve", data=self.cmds['scurve']) #SCurve(self.swerveDrive)
         SmartDashboard.putData(key="Lockdown", data=self.cmds['lockdown']) #DriveLockdown(self.swerveDrive))
         #SmartDashboard.putData(key="ArmPivot-Max", data=self.cmds['arm-pivot-max'])
         #SmartDashboard.putData(key="ArmPivot-Min", data=self.cmds['arm-pivot-min'])
@@ -66,6 +64,7 @@ class RobotContainer:
         SmartDashboard.putData(key="ExtendReset", data=self.cmds['extendreset'])
         SmartDashboard.putData(key="Face Home", data=DriveToRotation(self.swerveDrive, lambda: 180.0))
         SmartDashboard.putData(key="Face Away", data=DriveToRotation(self.swerveDrive, lambda: 0.0))
+        SmartDashboard.putData(key="To Pickup", data=DriveToPickup(self.swerveDrive))
 
         # Configure Default Commands
         self.configureDefaultCommands()
@@ -119,7 +118,6 @@ class RobotContainer:
         # Driver 1
         a = self.getDriver1().start().toggleOnTrue( self.cmds['fieldrelative'] )
         self.getDriver1().rightBumper().toggleOnTrue( self.cmds['halfspeed'] )
-        #self.getDriver1().leftBumper().whileTrue( self.cmds['scurve'] )
         self.getDriver1().leftBumper().toggleOnTrue( DriveToPose(self.swerveDrive, lambda: Pose2d( Translation2d(8, 2), Rotation2d(0).fromDegrees(180))) )
         self.getDriver1().back().toggleOnTrue( self.cmds['motionmagic'] )
         commands2.button.POVButton( self.getDriver1(),   0 ).whenPressed( DriveToRotation(self.swerveDrive, lambda: 0.0) )

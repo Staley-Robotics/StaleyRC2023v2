@@ -49,6 +49,7 @@
       "/LiveWindow/Arm/Extend": "Motor Controller",
       "/LiveWindow/Arm/Pivot": "Motor Controller",
       "/LiveWindow/ArmExtend/Extend": "Motor Controller",
+      "/LiveWindow/ArmExtend/ExtendMotor": "Motor Controller",
       "/LiveWindow/ArmPivot/PivotMotor": "Motor Controller",
       "/LiveWindow/SwerveDrive/FrontLeft": "Subsystem",
       "/LiveWindow/SwerveDrive/Gyro": "Gyro",
@@ -65,6 +66,7 @@
       "/LiveWindow/Ungrouped/PID Controller": "PIDController",
       "/LiveWindow/Ungrouped/Scheduler": "Scheduler",
       "/LiveWindow/Ungrouped/Talon FX [9]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon SRX [10]": "Motor Controller",
       "/LiveWindow/Ungrouped/Talon SRX [31]": "Motor Controller",
       "/LiveWindow/Ungrouped/class frc2::SubsystemBase": "Subsystem",
       "/SmartDashboard/Arm": "Subsystem",
@@ -92,18 +94,37 @@
       "/SmartDashboard/SD-Claw": "Subsystem",
       "/SmartDashboard/SD-Pneumatics": "Subsystem",
       "/SmartDashboard/SD-SwerveDrive": "Subsystem",
-      "/SmartDashboard/SwerveDrive": "Subsystem"
+      "/SmartDashboard/SwerveDrive": "Subsystem",
+      "/SmartDashboard/To Pickup": "Command"
     },
     "windows": {
       "/SmartDashboard/Field": {
         "RealRobot": {
+          "arrowSize": 33,
+          "arrowWeight": 2.0,
           "color": [
             0.0,
             255.0,
             255.0,
             255.0
-          ]
+          ],
+          "length": 0.7110983729362488,
+          "style": "Box/Image",
+          "weight": 2.0,
+          "width": 0.8129320740699768
         },
+        "Robot": {
+          "arrows": false,
+          "selectable": false,
+          "style": "Hidden"
+        },
+        "image": "C:\\Git\\staley-robotics-fall2023\\.game\\2023-field_trimmed.png",
+        "units": "meters",
+        "window": {
+          "visible": true
+        }
+      },
+      "/SmartDashboard/To Pickup": {
         "window": {
           "visible": true
         }
@@ -111,9 +132,6 @@
     }
   },
   "NetworkTables": {
-    "Transitory Values": {
-      "open": false
-    },
     "precision": 3,
     "transitory": {
       "LiveWindow": {

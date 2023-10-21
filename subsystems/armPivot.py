@@ -16,14 +16,12 @@ import typing
 import math
 
 # FRC Component Imports
-from commands2 import SubsystemBase, PIDSubsystem
-from ctre import WPI_TalonFX, WPI_TalonSRX, FeedbackDevice, RemoteFeedbackDevice, NeutralMode, ControlMode, DemandType
-from wpilib import PowerDistribution, RobotBase, RobotState
-#from wpilib.PowerDistribution import ModuleType
-from wpimath.controller import PIDController
+from commands2 import SubsystemBase
+from ctre import WPI_TalonFX, TalonSRX, WPI_TalonSRX, FeedbackDevice, RemoteFeedbackDevice, NeutralMode, ControlMode, DemandType
+from wpilib import RobotBase, RobotState
 
 # Our Imports
-from util.MotorUtils import MotorUtils
+
 
 
 ### Constants
@@ -58,10 +56,19 @@ class ArmPivot(SubsystemBase):
 
     def __init__(self):
         super().__init__()
+        # Pivot Sensor
+        self.pivotSensor:WPI_TalonSRX = WPI_TalonSRX( 10 ) #, "rio" )
+        self.pivotSensor.configFactoryDefault()
+        self.pivotSensor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Absolute, 0)
+        self.pivotSensor.setSensorPhase(True)
+        self.pivotSensor.setInverted(False)
+
         # Pivot Motor
         self.pivotMotor = WPI_TalonFX(9, "rio")
         self.pivotMotor.configFactoryDefault()
-        self.pivotMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, 0)
+        self.pivotMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, 0) # For Integrated Sensor
+        #self.pivotMotor.configRemoteFeedbackFilter( self.pivotSensor, 0 ) # For Mag Encoder
+        #self.pivotMotor.configSelectedFeedbackSensor( RemoteFeedbackDevice.RemoteSensor0, 0 ) # For Mag Encoder
         self.pivotMotor.setSensorPhase(True)
         self.pivotMotor.setInverted(False)
         self.pivotMotor.setNeutralMode(NeutralMode.Brake)
