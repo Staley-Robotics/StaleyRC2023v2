@@ -9,62 +9,40 @@ from subsystems import *
 from commands import *
 from sequences import *
 from autonomous.AutoSample1 import AutoSample1
+from autonomous.LeftBasic import LeftBasic
+from autonomous.RightBasic import RightBasic
 
 # Define Robot Container Class
 class RobotContainer:
-
-    # Commands
-    cmds = dict()
-
+    # Initialization
     def __init__(self):
-        # Subsystems
-        self.swerveDrive:SwerveDrive = SwerveDrive()
-        #pneumatics = Pneumatics()
-        self.armPivot = ArmPivot()
-        self.armExtend = ArmExtend()
-        self.claw = Claw()
-        #self.pdp = PowerDistPanel()
-        self.limelight1 = Limelight( "limelight-one", self.swerveDrive.getOdometry )
-        self.limelight2 = Limelight( "limelight-two", self.swerveDrive.getOdometry )
-
         # Controllers
         self.driver1 = commands2.button.CommandXboxController(0)
         self.driver2 = commands2.button.CommandXboxController(1)
 
-        # List of Commands
-        self.cmds = dict( {
-            'auto1': AutoSample1(self.swerveDrive, self.armPivot, self.claw),
-            'lockdown': DriveLockdown(self.swerveDrive),
-            'clawToggle': ClawAction(self.claw, ClawAction.Action.kToggle),
-            'halfspeed': ToggleHalfSpeed(self.swerveDrive),
-            'fieldrelative': ToggleFieldRelative(self.swerveDrive),
-            'motionmagic': ToggleMotionMagic(self.swerveDrive),
-            'extendreset': ArmExtendReset(self.armExtend) #,
-            #'arm-pivot-max': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMax),
-            #'arm-pivot-min': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kMin),
-            #'arm-pivot-up': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kNext),
-            #'arm-pivot-down': ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Direction.kPrev) 
-        } )
+        # Subsystems
+        self.swerveDrive = SwerveDrive()
+        self.armPivot    = ArmPivot()
+        self.armExtend   = ArmExtend()
+        self.claw        = Claw()
+        self.limelight1  = Limelight( "limelight-one", self.swerveDrive.getOdometry )
+        self.limelight2  = Limelight( "limelight-two", self.swerveDrive.getOdometry )
+        self.navigation  = Navigation( self.driver1.getPOV, self.driver2.getPOV )
 
         # SmartDashboard Subsystems
         SmartDashboard.putData(key="SwerveDrive", data=self.swerveDrive)
-        #SmartDashboard.putData(key="Pneumatics",  data=self.pneumatics)
         SmartDashboard.putData(key="ArmPivot",    data=self.armPivot)
         SmartDashboard.putData(key="ArmExtend",   data=self.armExtend)
         SmartDashboard.putData(key="Claw",        data=self.claw)
         SmartDashboard.putData(key="Limelight1",  data=self.limelight1)
         SmartDashboard.putData(key="Limelight2",  data=self.limelight2)
+        SmartDashboard.putData(key="Navigation",  data=self.navigation)
 
         # SmartDashboard Commands
-        SmartDashboard.putData(key="Lockdown", data=self.cmds['lockdown']) #DriveLockdown(self.swerveDrive))
-        #SmartDashboard.putData(key="ArmPivot-Max", data=self.cmds['arm-pivot-max'])
-        #SmartDashboard.putData(key="ArmPivot-Min", data=self.cmds['arm-pivot-min'])
-        #SmartDashboard.putData(key="ArmPivot-Up", data=self.cmds['arm-pivot-up'])
-        #SmartDashboard.putData(key="ArmPivot-Down", data=self.cmds['arm-pivot-down'])
-        SmartDashboard.putData(key="ExtendReset", data=self.cmds['extendreset'])
-        SmartDashboard.putData(key="Face Home", data=DriveToRotation(self.swerveDrive, lambda: 180.0))
-        SmartDashboard.putData(key="Face Away", data=DriveToRotation(self.swerveDrive, lambda: 0.0))
-        SmartDashboard.putData(key="To Pickup", data=DriveToPickup(self.swerveDrive))
+        SmartDashboard.putData(key="Lockdown",    data=DriveLockdown(self.swerveDrive))
+        SmartDashboard.putData(key="ExtendReset", data=ArmExtendReset(self.armExtend))
+        SmartDashboard.putData(key="Pickup",      data=DriveToPickup(self.swerveDrive))
+        SmartDashboard.putData(key="Dropoff",     data=DriveToDropoff(self.swerveDrive))
 
         # Configure Default Commands
         self.configureDefaultCommands()
@@ -75,9 +53,12 @@ class RobotContainer:
         # Autonomous Choices
         self.m_chooser = SendableChooser()
         self.m_chooser.setDefaultOption(name="None", object=commands2.cmd.nothing())
-        self.m_chooser.addOption(name="Sample 1", object=self.cmds['auto1'])
-        SmartDashboard.putData(key="Auto Mode", data=self.m_chooser) # Add Autonomous Chooser to Dashboard
-
+        self.m_chooser.addOption(name="Sample 1", object=AutoSample1(self.swerveDrive, self.armPivot, self.claw))
+        self.m_chooser.addOption(name="Blue Left Place and Exit", object=LeftBasic(self.swerveDrive, self.armPivot, self.armExtend, self.claw))
+        self.m_chooser.addOption(name="Blue Right Place and Exit", object=RightBasic(self.swerveDrive, self.armPivot, self.armExtend, self.claw))
+        self.m_chooser.addOption(name="Red Left Place and Exit", object=RightBasic(self.swerveDrive, self.armPivot, self.armExtend, self.claw, True))
+        self.m_chooser.addOption(name="Red Right Place and Exit", object=LeftBasic(self.swerveDrive, self.armPivot, self.armExtend, self.claw, True))
+        SmartDashboard.putData(key="Autonomous Mode", data=self.m_chooser) # Add Autonomous Chooser to Dashboard
 
     def configureDefaultCommands(self):
         # Drive by Joystick
@@ -105,32 +86,30 @@ class RobotContainer:
                 lambda: -self.getDriver2().getRightY()
             )
         )
-        #self.game.setDefaultCommand(
-        #    SelectDropoff(
-        #        self.game,
-        #        lambda: self.getDriver1().getPOV()
-        #    )
-        #)
 
 
     def configureButtonBindings(self):
         #### Example: https://github.com/robotpy/examples/blob/main/commands-v2/hatchbot-inlined/robotcontainer.py
         # Driver 1
-        a = self.getDriver1().start().toggleOnTrue( self.cmds['fieldrelative'] )
-        self.getDriver1().rightBumper().toggleOnTrue( self.cmds['halfspeed'] )
-        self.getDriver1().leftBumper().toggleOnTrue( DriveToPose(self.swerveDrive, lambda: Pose2d( Translation2d(8, 2), Rotation2d(0).fromDegrees(180))) )
-        self.getDriver1().back().toggleOnTrue( self.cmds['motionmagic'] )
-        commands2.button.POVButton( self.getDriver1(),   0 ).whenPressed( DriveToRotation(self.swerveDrive, lambda: 0.0) )
-        commands2.button.POVButton( self.getDriver1(),  90 ).whileTrue( commands2.cmd.runOnce( lambda: print("Controller 1:  90") ) )
-        commands2.button.POVButton( self.getDriver1(), 180 ).whenPressed( DriveToRotation(self.swerveDrive, lambda: 180.0) )
-        commands2.button.POVButton( self.getDriver1(), 270 ).whileTrue( commands2.cmd.runOnce( lambda: print("Controller 1: 270") ) )
+        self.getDriver1().start().toggleOnTrue( ToggleFieldRelative(self.swerveDrive) )
+        self.getDriver1().back().toggleOnTrue( ToggleMotionMagic(self.swerveDrive) )
+        self.getDriver1().rightBumper().toggleOnTrue( ToggleHalfSpeed(self.swerveDrive) )
+        #self.getDriver1().leftBumper().toggleOnTrue( DriveToPose(self.swerveDrive, lambda: Pose2d( Translation2d(2.0, 3), Rotation2d(0).fromDegrees(180))) )
+        self.getDriver1().leftBumper().toggleOnTrue( NavigationToggleZone(self.navigation) )
+        self.getDriver1().X().whileTrue( DriveToPickup(self.swerveDrive) )
+        self.getDriver1().Y().whileTrue( DriveToDropoff(self.swerveDrive) )
+
+        commands2.button.POVButton( self.getDriver1(),   0 ).whenPressed( commands2.cmd.nothing() )
+        commands2.button.POVButton( self.getDriver1(), 180 ).whenPressed( commands2.cmd.nothing() )
+        commands2.button.POVButton( self.getDriver1(), 270 ).whenPressed( commands2.cmd.nothing() )
+        commands2.button.POVButton( self.getDriver1(),  90 ).whenPressed( commands2.cmd.nothing() )
 
         # Driver 2
-        self.getDriver2().A().toggleOnTrue( self.cmds['clawToggle'] )
-        commands2.button.POVButton( self.getDriver2(),   0 ).whileTrue( commands2.cmd.runOnce( lambda: print("Controller 2:   0") ) )
-        commands2.button.POVButton( self.getDriver2(),  90 ).whileTrue( commands2.cmd.runOnce( lambda: print("Controller 2:  90") ) )
-        commands2.button.POVButton( self.getDriver2(), 180 ).whileTrue( commands2.cmd.runOnce( lambda: print("Controller 2: 180") ) )
-        commands2.button.POVButton( self.getDriver2(), 270 ).whileTrue( commands2.cmd.runOnce( lambda: print("Controller 2: 270") ) )
+        self.getDriver2().A().toggleOnTrue( ClawAction(self.claw, ClawAction.Action.kToggle) )
+        commands2.button.POVButton( self.getDriver2(),   0 ).whenPressed( commands2.cmd.nothing() )
+        commands2.button.POVButton( self.getDriver2(), 180 ).whenPressed( commands2.cmd.nothing() )
+        commands2.button.POVButton( self.getDriver2(), 270 ).whenPressed( commands2.cmd.nothing() )
+        commands2.button.POVButton( self.getDriver2(),  90 ).whenPressed( commands2.cmd.nothing() )
 
     # Return Controllers
     def getDriver1(self) -> commands2.button.CommandXboxController:
@@ -147,5 +126,6 @@ class RobotContainer:
 #m_robotContainer = RobotContainer()
 
 # Return the RobotContainer Object
-#    def getInstance(self):# -> RobotContainer:
-#        return self
+#    @staticmethod
+#    def getInstance(): # -> RobotContainer:
+#        return RobotContainer()

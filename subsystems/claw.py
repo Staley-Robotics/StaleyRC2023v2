@@ -27,7 +27,7 @@ class Claw(SubsystemBase):
     # Constructor
     def __init__(self):
         super().__init__()
-        self.solenoid = DoubleSolenoid(0, PneumaticsModuleType.CTREPCM, 3, 4)
+        self.solenoid = DoubleSolenoid(0, PneumaticsModuleType.CTREPCM, 4, 3)
 
         self.setSubsystem( "Claw" )
         self.setName( "Claw" )

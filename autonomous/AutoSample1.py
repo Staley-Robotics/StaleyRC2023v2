@@ -20,7 +20,7 @@ class AutoSample1(SequentialCommandGroup):
         self.addRequirements( [swerveDrive, arm, claw] )
         
         #self.addCommands( SCurve(swerveDrive) )
-        self.addCommands( swerveDrive.stop() )
+        self.addCommands( commands2.cmd.runOnce( swerveDrive.stop ) )
         self.addCommands( commands2.cmd.wait( 2.0 ) )
         #self.addCommands(
         #    ParallelCommandGroup(
@@ -29,7 +29,7 @@ class AutoSample1(SequentialCommandGroup):
         #    )
         #)
         #self.addCommands( SCurve(swerveDrive) )
-        self.addCommands( swerveDrive.stop() )
+        self.addCommands( commands2.cmd.runOnce( swerveDrive.stop ) )
         self.addCommands( commands2.cmd.wait( 15.0 ) )
 
 

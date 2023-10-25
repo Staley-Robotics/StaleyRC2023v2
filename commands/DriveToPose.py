@@ -62,7 +62,7 @@ class DriveToPose(CommandBase):
         #self.swerveDrive.runChassisSpeeds( speeds )
 
     def end(self, interrupted:bool) -> None:
-        pass #self.swerveDrive.stop()
+        self.swerveDrive.stop()
 
     def isFinished(self) -> bool:
         xDone = self._m_xPid.atSetpoint()

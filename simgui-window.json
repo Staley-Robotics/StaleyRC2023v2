@@ -37,6 +37,11 @@
       "Pos": "558,1049",
       "Size": "1837,965"
     },
+    "###/SmartDashboard/Mech-ArmPivot": {
+      "Collapsed": "0",
+      "Pos": "42,1293",
+      "Size": "466,676"
+    },
     "###/SmartDashboard/SCurve": {
       "Collapsed": "0",
       "Pos": "517,651",
@@ -45,7 +50,7 @@
     "###/SmartDashboard/To Pickup": {
       "Collapsed": "0",
       "Pos": "518,521",
-      "Size": "89,107"
+      "Size": "197,101"
     },
     "###FMS": {
       "Collapsed": "0",

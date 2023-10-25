@@ -16,44 +16,54 @@ class ClawAction(CommandBase):
         kOpen:int   = 1
         kToggle:int = -1
 
-    def __init__(self, claw:Claw, action:int):
+    def __init__(self, claw:Claw, action:int, noWait:bool=False):
         super().__init__()
         self.setName( "ClawAction" )
+        self.addRequirements( claw )
         
-        self.ClawSubsystem = claw
-        self.addRequirements( [self.ClawSubsystem] )
-               
-        self.action = action
-
-        self.timer = Timer()
+        self.__claw__ = claw       
+        self.__action__ = action
+        self.__timer__ = Timer()
+        self.__noWait__ = noWait
 
 
     def initialize(self) -> None:
         # Run Action
-        match self.action:
+        match self.__action__:
             case ClawAction.Action.kClose:
-                self.ClawSubsystem.close()
+                self.__claw__.close()
             case ClawAction.Action.kOpen:
-                self.ClawSubsystem.open()
+                self.__claw__.open()
             case ClawAction.Action.kToggle:
-                self.ClawSubsystem.toggle()
+                self.__claw__.toggle()
             case _:
                 return
         
         # Start Timer
-        self.timer.start()
+        self.__timer__.reset()
+        self.__timer__.start()
 
     def execute(self) -> None:
         pass
 
     def end(self, interrupted:bool) -> None:
-        self.timer.stop()
-        self.timer.reset()
+        self.__timer__.stop()
 
     def isFinished(self) -> bool:
-        time = self.timer.get()
-        return time > 0.4
+        time = self.__timer__.get()
+        return self.__noWait__ or time > 0.4
     
     def runsWhenDisabled(self) -> bool:
         return False
 
+class ClawOpen(ClawAction):
+    def __init__(self, claw, noWait:bool=False):
+        super().__init__(claw, ClawAction.Action.kOpen, noWait)
+
+class ClawClose(ClawAction):
+    def __init__(self, claw, noWait:bool=False):
+        super().__init__(claw, ClawAction.Action.kClose, noWait)
+
+class ClawToggle(ClawAction):
+    def __init__(self, claw, noWait:bool=False):
+        super().__init__(claw, ClawAction.Action.kToggle, noWait)

@@ -1,27 +1,22 @@
 {
   "HALProvider": {
     "Other Devices": {
-      "CANCoder[18]": {
+      "Talon FX[9]/Integrated Sensor": {
         "header": {
           "open": true
         }
       },
-      "Talon FX[7]": {
+      "Talon SRX[10]/Quad Encoder": {
         "header": {
           "open": true
         }
       },
-      "Talon FX[7]/Integrated Sensor": {
+      "Talon SRX[31]": {
         "header": {
           "open": true
         }
       },
-      "Talon FX[8]": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX[8]/Integrated Sensor": {
+      "Talon SRX[31]/Quad Encoder": {
         "header": {
           "open": true
         }
@@ -77,8 +72,10 @@
       "/SmartDashboard/ArmPivot-Min": "Command",
       "/SmartDashboard/ArmPivot-Up": "Command",
       "/SmartDashboard/Auto Mode": "String Chooser",
+      "/SmartDashboard/Autonomous Mode": "String Chooser",
       "/SmartDashboard/Claw": "Subsystem",
       "/SmartDashboard/DriveSCurve": "Command",
+      "/SmartDashboard/Dropoff": "Command",
       "/SmartDashboard/ExtendReset": "Command",
       "/SmartDashboard/Face Away": "Command",
       "/SmartDashboard/Face Home": "Command",
@@ -86,6 +83,12 @@
       "/SmartDashboard/Limelight1": "Subsystem",
       "/SmartDashboard/Limelight2": "Subsystem",
       "/SmartDashboard/Lockdown": "Command",
+      "/SmartDashboard/Mech-ArmPivot": "Mechanism2d",
+      "/SmartDashboard/Nav/Options/Entry": "String Chooser",
+      "/SmartDashboard/Nav/Options/Exit": "String Chooser",
+      "/SmartDashboard/Nav/Options/Pickup": "String Chooser",
+      "/SmartDashboard/Navigation": "Subsystem",
+      "/SmartDashboard/Pickup": "Command",
       "/SmartDashboard/Pneumatics": "Subsystem",
       "/SmartDashboard/Rotate Facing Away": "Command",
       "/SmartDashboard/Rotate Facing Home": "Command",
@@ -118,8 +121,17 @@
           "selectable": false,
           "style": "Hidden"
         },
+        "SimRobot": {
+          "length": 0.7110000252723694,
+          "width": 0.8119999766349792
+        },
         "image": "C:\\Git\\staley-robotics-fall2023\\.game\\2023-field_trimmed.png",
         "units": "meters",
+        "window": {
+          "visible": true
+        }
+      },
+      "/SmartDashboard/Mech-ArmPivot": {
         "window": {
           "visible": true
         }

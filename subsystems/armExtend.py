@@ -25,7 +25,7 @@ from wpilib import RobotState
 # Module Physical Constants
 
 # Controller Constants
-extend_kP = 0.5
+extend_kP = 0.30
 extend_kI = 0
 extend_kD = 0
 extend_kF = 0 #0.065

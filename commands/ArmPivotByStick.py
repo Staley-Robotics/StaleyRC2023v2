@@ -12,7 +12,6 @@ from subsystems import ArmPivot
 ### Constants
 # SwerveDrive Module Input Deadband
 deadband = 0.04
-rate = 10
 
 ### DefaultArm Command Class
 class ArmPivotByStick(CommandBase):
@@ -22,29 +21,18 @@ class ArmPivotByStick(CommandBase):
                 ):
         super().__init__()
         self.setName( f"ArmPivotByStick" )
+        self.addRequirements( [armPivot] )
         
-        self.armPivot = armPivot
-        self.addRequirements( [self.armPivot] )
-
-        self.input = inputFunction
+        self.__pivot__ = armPivot
+        self.__input__ = inputFunction
 
     def initialize(self) -> None:
         pass
 
     def execute(self) -> None:
-        # Get Input Values
-        input = self.input()
-
-        # Calculate Deadband
-        input  = applyDeadband( input,   deadband ) 
-
-        # Run Input
-        #if input != 0.0: 
-        #    pos = self.armPivot.getPosition()
-        #    pos += int(rate * input)
-        #    self.armPivot.setPosition( pos )
-
-        self.armPivot.movePosition( input )
+        input = self.__input__()
+        input = applyDeadband( input,   deadband ) 
+        self.__pivot__.movePosition( input )
 
     def end(self, interrupted:bool) -> None:
         pass

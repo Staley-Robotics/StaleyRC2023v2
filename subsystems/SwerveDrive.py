@@ -24,6 +24,7 @@ from wpimath.geometry import Translation2d, Rotation2d, Pose2d
 from wpimath.kinematics import SwerveDrive4Kinematics, ChassisSpeeds, SwerveModuleState
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.trajectory import TrapezoidProfileRadians
+from ntcore import *
 
 # Our Imports
 from .SwerveModule import SwerveModule
@@ -60,6 +61,7 @@ class SwerveDrive(SubsystemBase):
             current = self.get()
             self.set(not current)
     
+    __ntTbl__ = NetworkTableInstance.getDefault().getTable("SwerveDrive")
     fieldRelative:BooleanProperty = BooleanProperty("fieldRelative", True)
     halfSpeed:BooleanProperty = BooleanProperty("halfSpeed", False)
     motionMagic:BooleanProperty = BooleanProperty("motionMagic", False)
@@ -106,48 +108,43 @@ class SwerveDrive(SubsystemBase):
                 self.moduleBL.getPosition(),
                 self.moduleBR.getPosition()
             ],
-            Pose2d(Translation2d(2.50,1.50), Rotation2d().fromDegrees(gyroStartHeading))
+            Pose2d(Translation2d(2.10,4.0), Rotation2d().fromDegrees(gyroStartHeading))
         )
 
         # Holonomic PID
-        constraints = TrapezoidProfileRadians.Constraints(
+        xPid = PIDController( 0.40, 0, 0 )
+        xPid.setTolerance( 0.05 )
+        xPid.reset()
+
+        yPid = PIDController( 0.40, 0, 0 )
+        yPid.setTolerance( 0.05 )
+        yPid.reset()
+
+        tPidConstraints = TrapezoidProfileRadians.Constraints(
             kMaxAngularSpeedMetersPerSecond,
             kMaxAngularAccelMetersPerSecondSq
         )
-        xPid = PIDController( 0.40, 0, 0 )
-        #xPid.setIntegratorRange( -kMaxSpeedMetersPerSecond, kMaxSpeedMetersPerSecond )
-        xPid.setTolerance( 0.05 )
-        xPid.reset()
-        yPid = PIDController( 0.40, 0, 0 )
-        #yPid.setIntegratorRange( -kMaxSpeedMetersPerSecond, kMaxSpeedMetersPerSecond )
-        yPid.setTolerance( 0.05 )
-        yPid.reset()
-        tPid = ProfiledPIDControllerRadians( 2, 0, 0, constraints )
-        #tPid.setIntegratorRange( -kMaxAngularSpeedMetersPerSecond, kMaxAngularSpeedMetersPerSecond )
+        tPid = ProfiledPIDControllerRadians( 2, 0, 0, tPidConstraints )
         tPid.enableContinuousInput( -math.pi, math.pi )
         tPid.setTolerance( 0.00436 )
         tPid.reset( self.getRobotAngle().radians() )
+
         self.holonomicPID = HolonomicDriveController(
             xPid,
             yPid,
             tPid
         )
-        #self.holonomicPID.setTolerance(
-        #    Pose2d(
-        #        Translation2d( 0.05, 0.05 ),
-        #        Rotation2d(0).fromDegrees( 0.25 )
-        #    )
-        #)
-
+        
         # Field on Shuffleboard
         SmartDashboard.putData("Field", Field2d())
 
     ### Drive Based Functions
     # Stop Drivetrain
-    def stop(self) -> CommandBase:
-        return self.runOnce(
-            lambda: self.runChassisSpeeds( ChassisSpeeds(0,0,0) )
-        )
+    def stop(self): # -> CommandBase:
+        self.runChassisSpeeds( ChassisSpeeds(0,0,0) )
+        #return self.runOnce(
+        #    lambda: self.runChassisSpeeds( ChassisSpeeds(0,0,0) )
+        #)
 
     # Returns Halfspeed Mode Status
     def isHalfspeed(self):
@@ -184,11 +181,25 @@ class SwerveDrive(SubsystemBase):
         poseX = round( pose.X(), 3 )
         poseY = round( pose.Y(), 3 )
         poseR = round( pose.rotation().degrees(), 3 )
+
+        self.__ntTbl__.putNumber( "PositionX", poseX )
+        self.__ntTbl__.putNumber( "PositionY", poseY )
+        self.__ntTbl__.putNumber( "PositionR", poseR )
+        self.__ntTbl__.putNumber( "Gyro", self.gyro.getYaw() )
+
+        if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
+            poseX = 16.523 - poseX
+            poseY = 8.013 - poseY
+            poseR = 180 - poseR
+ 
+        robotName = "Robot"
+        if not RobotBase.isReal(): robotName = "SimRobot"
+
         SmartDashboard.putNumberArray(
-            "Field/RealRobot",
+            f"Field/{robotName}",
             [ poseX, poseY, poseR ]
         )
-       
+        
     # Resync the Gyro
     def syncGyro(self) -> None:
         poseDegrees = self.getPose().rotation().degrees()

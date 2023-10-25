@@ -4,8 +4,8 @@ import math
 # Import FRC
 from commands2 import SequentialCommandGroup
 import commands2.cmd
+from wpilib import DriverStation
 from wpimath.geometry import Translation2d
-from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 
 # Import Subsystems and Commands
 from subsystems import *
@@ -17,100 +17,216 @@ kMaxAccelMetersPerSecondSq = 3
 kMaxAngularSpeedMetersPerSecond = math.pi
 kMaxAngularAccelMetersPerSecondSq = math.pi
 
-class DriveToPickup(SequentialCommandGroup):
-    def __init__(self, swerveDrive:SwerveDrive):
-        super().__init__( commands=() )
-        self.setName( "Pickup" )
+class DriveToPickup(ConditionalCommand):
+    def __init__(self, swerveDrive:SwerveDrive):        
+        super().__init__(
+            self.DriveToPickupPath(swerveDrive, False),
+            self.DriveToPickupPath(swerveDrive, True),
+            lambda: DriverStation.getAlliance() == DriverStation.Alliance.kBlue
+        )
+        self.setName( "DriveToPickup" )
         self.addRequirements( swerveDrive )
-        
-        """
-        ### Trajectory Information
-        # Trajectory Config
-        config = TrajectoryConfig(
-            kMaxSpeedMetersPerSecond,
-            kMaxAccelMetersPerSecondSq
-        )
 
-        trajectory = TrajectoryGenerator.generateTrajectory(
-            start=Pose2d(Translation2d(0,0),Rotation2d(0)), # Start
-            interiorWaypoints=[
-                Translation2d(1,1),
-                Translation2d(2,-1)
-            ], # Path
-            end=Pose2d(Translation2d(3,0),Rotation2d(0)), # End
-            config=config # Config
-        )
 
-        ### Command Sequence
-        self.addCommands( DriveTrajectory( swerveDrive, trajectory ) )
-        """
+    class DriveToPickupPath(SequentialCommandGroup):
+        __ntTbl__ = NetworkTableInstance.getDefault().getTable( "Navigation" )
+
+        def __init__(self, swerveDrive:SwerveDrive, isRedAlliance:bool=False):
+            super().__init__( commands=() )
+            alliance = "Blue" if not isRedAlliance else "Red"
+            self.setName( f"DriveToPickupPath-{alliance}" )
+            self.addRequirements( swerveDrive )
+            self.DriveTrain = swerveDrive
+            self.isRedAlliance = isRedAlliance
+
+            rDropoffRobotMiddle = ChargedUp.getRow("DropoffRobotMiddle")
+            rChargeNear = ChargedUp.getRow("ChargeNear")
+            rSafeExit = ChargedUp.getRow("SafeExit")
+            rArenaMiddle = ChargedUp.getRow("ArenaMiddle")
+            rPickupEntry = ChargedUp.getRow("PickupEntry")
+            rPickupRobotNormal = ChargedUp.getRow("PickupRobotNormal")
+            rPickupEdge = ChargedUp.getRow("PickupEdge")
+
+            cChargeEdgeLeft = ChargedUp.getCol("ChargeEdgeLeft", isRedAlliance)
+            cSafeExitLeft = ChargedUp.getCol("SafeExitLeft", isRedAlliance)
+            cChargeEdgeRight = ChargedUp.getCol("ChargeEdgeRight", isRedAlliance)
+            cSafeExitRight = ChargedUp.getCol("SafeExitRight", isRedAlliance)
+            cChargeBalanceLeft = ChargedUp.getCol("ChargeBalanceLeft", isRedAlliance)
+            cChargeBalanceRight = ChargedUp.getCol("ChargeBalanceRight", isRedAlliance)
+            cPickupDropoffEdge = ChargedUp.getCol("PickupDropoffEdge", isRedAlliance)
+            cPickupEntry = ChargedUp.getCol("PickupEntry", isRedAlliance)
+            cPickupLeft = ChargedUp.getCol("PickupLeft", isRedAlliance)
+            cPickupRight = ChargedUp.getCol("PickupRight", isRedAlliance)
+
+            tALeft = Translation2d( rDropoffRobotMiddle, cChargeEdgeLeft )
+            tARight = Translation2d( rDropoffRobotMiddle, cChargeEdgeRight )
+            
+            tBLeft = Translation2d( rChargeNear, cSafeExitLeft )
+            tBRight = Translation2d( rChargeNear, cSafeExitRight )
+            
+            tCLeft = Translation2d( rSafeExit, cSafeExitLeft )
+            tCMiddle = Translation2d( rSafeExit, cChargeBalanceLeft )
+            tCRight = Translation2d( rSafeExit, cSafeExitRight)
+
+            tD = Translation2d( rArenaMiddle, cPickupDropoffEdge )
+            
+            tE = Translation2d( rPickupEntry, cPickupRight )
+            
+            tFLeft = Translation2d( rPickupRobotNormal, cPickupLeft )
+            tFRight = Translation2d( rPickupRobotNormal, cPickupRight )
+
+            dALeft   = DriveToPose( swerveDrive, lambda: Pose2d( tALeft,   swerveDrive.getRobotAngle() ) )
+            dARight  = DriveToPose( swerveDrive, lambda: Pose2d( tARight,  swerveDrive.getRobotAngle() ) )
+            dBLeft   = DriveToPose( swerveDrive, lambda: Pose2d( tBLeft,   swerveDrive.getRobotAngle() ) )
+            dBRight  = DriveToPose( swerveDrive, lambda: Pose2d( tBRight,  swerveDrive.getRobotAngle() ) )
+            dCLeft   = DriveToPose( swerveDrive, lambda: Pose2d( tCLeft,   swerveDrive.getRobotAngle() ) )
+            dCMiddle = DriveToPose( swerveDrive, lambda: Pose2d( tCMiddle, swerveDrive.getRobotAngle() ) )
+            dCRight  = DriveToPose( swerveDrive, lambda: Pose2d( tCRight,  swerveDrive.getRobotAngle() ) )
+            dD       = DriveToPose( swerveDrive, lambda: Pose2d( tD,       Rotation2d(0).fromDegrees(-90) ) )
+            dE       = DriveToPose( swerveDrive, lambda: Pose2d( tE,       Rotation2d(0).fromDegrees(0) ) )
+            dFLeft   = DriveToPose( swerveDrive, lambda: Pose2d( tFLeft,   Rotation2d(0).fromDegrees(0) ) )
+            dFRight  = DriveToPose( swerveDrive, lambda: Pose2d( tFRight,  Rotation2d(0).fromDegrees(0) ) )
+            
+            self.addCommands(
+                ConditionalCommand(
+                    dALeft,
+                    commands2.cmd.nothing(),
+                    lambda: self.isPoseValid( xMax=rChargeNear, yMin=cChargeEdgeRight, yMax=cChargeEdgeLeft ) and self.isExitLeft()
+                )
+            )
+            self.addCommands(
+                ConditionalCommand(
+                    dARight,
+                    commands2.cmd.nothing(),
+                    lambda: self.isPoseValid( xMax=rChargeNear, yMin=cChargeEdgeRight, yMax=cChargeEdgeLeft ) and self.isExitRight()
+                )
+            )
+            self.addCommands(
+                ConditionalCommand(
+                    dBLeft,
+                    commands2.cmd.nothing(),
+                    lambda: self.isPoseValid( xMax=rChargeNear, yMin=cChargeBalanceLeft ) #, yMax=cPickupDropoffEdge )
+                )
+            )
+            self.addCommands(
+                ConditionalCommand(
+                    dBRight,
+                    commands2.cmd.nothing(),
+                    lambda: self.isPoseValid( xMax=rChargeNear, yMax=cChargeBalanceRight )
+                )
+            )
+            self.addCommands(
+                ConditionalCommand(
+                    dCLeft,
+                    commands2.cmd.nothing(),
+                    lambda: self.isPoseValid( xMax=rSafeExit, yMin=cChargeEdgeLeft ) #, yMax=cPickupDropoffEdge )
+                )
+            )
+            self.addCommands(
+                ConditionalCommand(
+                    dCMiddle,
+                    commands2.cmd.nothing(),
+                    lambda: self.isPoseValid( xMax=rSafeExit, yMin=cChargeEdgeRight, yMax=cChargeEdgeLeft )
+                )
+            )
+            self.addCommands(
+                ConditionalCommand(
+                    dCRight,
+                    commands2.cmd.nothing(),
+                    lambda: self.isPoseValid( xMax=rSafeExit, yMax=cChargeEdgeRight )
+                )
+            )
+            self.addCommands(
+                ConditionalCommand(
+                    dD,
+                    commands2.cmd.nothing(),
+                    lambda: self.isPoseValid( xMax=rArenaMiddle )
+                )
+            )
+            self.addCommands(
+                ConditionalCommand(
+                    dE,
+                    commands2.cmd.nothing(),
+                    lambda: self.isPoseValid( xMax=rPickupEntry )
+                )
+            )
+            self.addCommands(
+                ConditionalCommand(
+                    dFLeft,
+                    commands2.cmd.nothing(),
+                    lambda: self.isPoseValid( xMax=rPickupEdge ) and self.isPickupLeft()
+                )
+            )
+            self.addCommands(
+                ConditionalCommand(
+                    dFRight,
+                    commands2.cmd.nothing(),
+                    lambda: self.isPoseValid( xMax=rPickupEdge ) and self.isPickupRight()
+                )
+            )
+
+        def isExitLeft(self) -> bool:
+            exit = self.__ntTbl__.getString( "ExitZone", "None" )
+            if self.isRedAlliance:
+                return exit == "Right"
+            else:
+                return exit == "Left"
         
-        self.addCommands(
-            ConditionalCommand(
-                ConditionalCommand(
-                    SequentialCommandGroup(
-                        DriveToPose( swerveDrive, lambda: Pose2d( Translation2d( 2.175, 3.975), Rotation2d(0).fromDegrees(-180) ) ),
-                        DriveToPose( swerveDrive, lambda: Pose2d( Translation2d( 2.925, 4.725), Rotation2d(0).fromDegrees(-180) ) )
-                    ),
-                    ConditionalCommand(
-                        SequentialCommandGroup(
-                            DriveToPose( swerveDrive, lambda: Pose2d( Translation2d( 2.175, 1.525), Rotation2d(0).fromDegrees(-180) ) ),
-                            DriveToPose( swerveDrive, lambda: Pose2d( Translation2d( 2.925, 0.7625), Rotation2d(0).fromDegrees(-180) ) )
-                        ),
-                        commands2.cmd.nothing(),
-                        lambda: True # Go Right
-                    ),
-                    lambda: False # Go Left
-                ),
-                commands2.cmd.nothing(),
-                lambda: swerveDrive.getPose().X() < 2.925 and 1.525 < swerveDrive.getPose().Y() and swerveDrive.getPose().Y() < 3.975
-            )
-        )
-        self.addCommands(
-            ConditionalCommand(
-                ConditionalCommand(
-                    DriveToPose( swerveDrive, lambda: Pose2d( Translation2d( 5.296, 4.725), Rotation2d(0).fromDegrees(179 ) ) ),
-                    ConditionalCommand(
-                        DriveToPose( swerveDrive, lambda: Pose2d( Translation2d( 5.296, 3.525), Rotation2d(0).fromDegrees(179 ) ) ),
-                        ConditionalCommand(
-                            DriveToPose( swerveDrive, lambda: Pose2d( Translation2d( 5.296, 0.7625), Rotation2d(0).fromDegrees(179 ) ) ),
-                            commands2.cmd.nothing(),
-                            lambda: -math.inf < swerveDrive.getPose().Y() and swerveDrive.getPose().Y() < 1.525 # Right
-                        ),
-                        lambda: 1.525 < swerveDrive.getPose().Y() and swerveDrive.getPose().Y() < 3.975  # Center
-                    ),
-                    lambda: 3.975 < swerveDrive.getPose().Y() and swerveDrive.getPose().Y() < 5.475  # Left
-                ),
-                commands2.cmd.nothing(),
-                lambda: swerveDrive.getPose().X() < 5.296
-            )
-        )
-        self.addCommands(
-            ConditionalCommand(
-                DriveToPose( swerveDrive, lambda: Pose2d( Translation2d(8.2615, 5.475), Rotation2d(0) ) ),
-                commands2.cmd.nothing(),
-                lambda: swerveDrive.getPose().X() < 12.750 and swerveDrive.getPose().Y() < 5.475
-            )
-        )
-        self.addCommands(
-            ConditionalCommand(
-                DriveToPose( swerveDrive, lambda: Pose2d( Translation2d(12.750, 6.7750), Rotation2d(0) ) ),
-                commands2.cmd.nothing(),
-                lambda: swerveDrive.getPose().X() < 12.750
-            )
-        )
-        self.addCommands(
-            ConditionalCommand(
-                ConditionalCommand(
-                    DriveToPose( swerveDrive, lambda: Pose2d( Translation2d(15.576, 7.35), Rotation2d(0) ) ),
-                    ConditionalCommand(
-                        DriveToPose( swerveDrive, lambda: Pose2d( Translation2d(15.576, 6.20), Rotation2d(0) ) ),
-                        commands2.cmd.nothing(),
-                        lambda: True # Go Right
-                    ),
-                    lambda: False # Go Left
-                ),
-                commands2.cmd.nothing(),
-                lambda: swerveDrive.getPose().X() < 15.576
-            )
-        )
+        def isExitMiddle(self) -> bool:
+            exit = self.__ntTbl__.getString( "ExitZone", "None" )
+            return exit == "Middle"
+        
+        def isExitRight(self) -> bool:
+            exit = self.__ntTbl__.getString( "ExitZone", "None" )
+            if self.isRedAlliance:
+                return exit == "Left"
+            else:
+                return exit == "Right"
+
+        def isPickupLeft(self) -> bool:
+            exit = self.__ntTbl__.getString( "PickupZone", "None" )
+            if self.isRedAlliance:
+                return exit == "Right"
+            else:
+                return exit == "Left"
+        
+        def isPickupRight(self) -> bool:
+            exit = self.__ntTbl__.getString( "PickupZone", "None" )
+            if self.isRedAlliance:
+                return exit == "Left"
+            else:
+                return exit == "Right"
+        
+        def isPoseValid( self,
+                        xMin:float = None,
+                        xMax:float = None,
+                        yMin:float = None,
+                        yMax:float = None
+                    ) -> bool:
+            # Valid unless otherwise not
+            valid = True
+            
+            # Get Pose
+            x = self.DriveTrain.getPose().X()
+            y = self.DriveTrain.getPose().Y()
+            
+            # Reverse Y variables if Red Alliance
+            if DriverStation.getAlliance == DriverStation.Alliance.kRed:
+                temp = yMin
+                yMin = yMax
+                yMax = temp
+
+            # Is X Valid?
+            if valid and xMin != None:
+                valid = x >= xMin
+            if valid and xMax != None:
+                valid = x <= xMax
+
+            # Is Y Valid?
+            if valid and yMin != None:
+                valid = y >= yMin
+            if valid and yMax != None:
+                valid = y <= yMax
+
+            # Return Valid Results
+            return valid
