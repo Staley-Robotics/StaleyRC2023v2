@@ -101,6 +101,11 @@
       "/SmartDashboard/To Pickup": "Command"
     },
     "windows": {
+      "/SmartDashboard/Autonomous Mode": {
+        "window": {
+          "visible": true
+        }
+      },
       "/SmartDashboard/Field": {
         "RealRobot": {
           "arrowSize": 33,
@@ -127,16 +132,6 @@
         },
         "image": "C:\\Git\\staley-robotics-fall2023\\.game\\2023-field_trimmed.png",
         "units": "meters",
-        "window": {
-          "visible": true
-        }
-      },
-      "/SmartDashboard/Mech-ArmPivot": {
-        "window": {
-          "visible": true
-        }
-      },
-      "/SmartDashboard/To Pickup": {
         "window": {
           "visible": true
         }

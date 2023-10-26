@@ -14,26 +14,31 @@ class Navigation(SubsystemBase):
         self.__con2getPov__ = con2getPov
 
         self.__pickup__ = NavigationZone( "PickupZone" )
+        self.__pickup__.addOption( "Nearest", "None", "None" )
         self.__pickup__.addOption( "Left", "PickupLeft", "PickupRight" )
         self.__pickup__.addOption( "Right", "PickupRight", "PickupLeft" )
 
         self.__entryzone__ = NavigationZone( "EntryZone" )
+        self.__entryzone__.addOption( "Nearest", "None", "None" )
         self.__entryzone__.addOption( "Left", "SafeExitLeft", "SafeExitRight" )
-        self.__entryzone__.addOption( "Middle", "ChargeBalanceMiddle", "ChargeBalanceMiddle" )
+        #self.__entryzone__.addOption( "Middle", "ChargeBalanceMiddle", "ChargeBalanceMiddle" )
         self.__entryzone__.addOption( "Right", "SafeExitRight", "SafeExitLeft" )
 
         self.__exitzone__ = NavigationZone( "ExitZone" )
+        self.__exitzone__.addOption( "Nearest", "None", "None" )
         self.__exitzone__.addOption( "Left", "SafeExitLeft", "SafeExitLeft" )
-        self.__exitzone__.addOption( "Middle", "ChargeBalanceLeft", "ChargeBalanceRight" )
+        #self.__exitzone__.addOption( "Middle", "ChargeBalanceLeft", "ChargeBalanceRight" )
         self.__exitzone__.addOption( "Right", "SafeExitRight", "SafeExitLeft" )
 
-        self.__ground__ = NavigationZone( "GroundZone")
-        self.__ground__.addOption( "FarLeft", "GroundObject1", "GroundObject4" )
-        self.__ground__.addOption( "MiddleLeft", "GroundObject2", "GroundObject3" )
-        self.__ground__.addOption( "MiddleRight", "GroundObject3", "GroundObject2" )
-        self.__ground__.addOption( "FarRight", "GroundObject4", "GroundObject1" )
+        #self.__ground__ = NavigationZone( "GroundZone")
+        #self.__ground__.addOption( "Nearest", "None", "None" )
+        #self.__ground__.addOption( "FarLeft", "GroundObject1", "GroundObject4" )
+        #self.__ground__.addOption( "MiddleLeft", "GroundObject2", "GroundObject3" )
+        #self.__ground__.addOption( "MiddleRight", "GroundObject3", "GroundObject2" )
+        #self.__ground__.addOption( "FarRight", "GroundObject4", "GroundObject1" )
 
         self.__balance__ = NavigationZone( "BalanceZone" )
+        self.__balance__.addOption( "Nearest", "None", "None" )
         self.__balance__.addOption( "Left", "ChargeBalanceLeft", "ChargeBalanceRight" )
         self.__balance__.addOption( "Middle", "ChargeBalanceMiddle", "ChargeBalanceMiddle" )
         self.__balance__.addOption( "Right", "ChargeBalanceRight", "ChargeBalanceLeft" )
@@ -84,8 +89,8 @@ class Navigation(SubsystemBase):
                 return self.__entryzone__
             case "ExitZone":
                 return self.__exitzone__
-            case "GroundZone":
-                return self.__ground__
+            #case "GroundZone":
+            #    return self.__ground__
             case "BalanceZone":
                 return self.__balance__
             case "ScoreRow":
@@ -98,7 +103,7 @@ class Navigation(SubsystemBase):
         self.__pickup__.updateDashboard()
         self.__entryzone__.updateDashboard()
         self.__exitzone__.updateDashboard()
-        self.__ground__.updateDashboard()
+        #self.__ground__.updateDashboard()
         self.__balance__.updateDashboard()
         self.__scoreGrid__.updateDashboard()
 
@@ -122,10 +127,11 @@ class NavigationZone():
         return self.__options__
     
     def getSelectedValue(self) -> str:
+        a = self.__options__[self.__selection__]
         if DriverStation.getAlliance() != DriverStation.Alliance.kRed:
-            return self.__options__[self.__selection__].get("blueValue")
+            return self.__options__[self.__selection__].get("blue")
         else:
-            return self.__options__[self.__selection__].get("redValue")
+            return self.__options__[self.__selection__].get("red")
     
     def getSelectedName(self) -> str:
         return self.__options__[self.__selection__].get("name")
@@ -179,7 +185,8 @@ class NavigationToggleZone(InstantCommand):
             case "EntryZone":
                 NavigationUpdateZoneTimed( self.__nav__, "BalanceZone" ).schedule()
             case "BalanceZone":
-                NavigationUpdateZoneTimed( self.__nav__, "GroundZone" ).schedule()
+                #NavigationUpdateZoneTimed( self.__nav__, "GroundZone" ).schedule()
+                pass
             case "GroundZone":
                 pass #NavigationUpdateZoneValueTimed( self.nav, "ScoreZone" ).schedule()
             case _:

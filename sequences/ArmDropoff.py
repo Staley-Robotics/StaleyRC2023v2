@@ -29,7 +29,7 @@ class ArmDropOff(SequentialCommandGroup):
             ParallelCommandGroup(
                 self.addCommands( ArmPivotPosition( armPivot, lambda: ArmPivotPosition.Direction.kMax ) ),
                 SequentialCommandGroup(
-                    WaitUntilCommand( lambda: armPivot.getPosition() > 5.0 ),
+                    WaitUntilCommand( lambda: armPivot.getCurrentPosition() > 5.0 ),
                     self.addCommands( ArmExtendPosition( armExtend, lambda: ArmExtendPosition.Direction.kMax ) )
                 )
             )

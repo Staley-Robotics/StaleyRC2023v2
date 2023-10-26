@@ -181,16 +181,21 @@ class SwerveDrive(SubsystemBase):
         poseX = round( pose.X(), 3 )
         poseY = round( pose.Y(), 3 )
         poseR = round( pose.rotation().degrees(), 3 )
+        gyroY = round( self.gyro.getYaw(), 3 )
+        gyroP = round( self.gyro.getPitch(), 3 )
+        gyroR = round( self.gyro.getRoll(), 3 )
 
         self.__ntTbl__.putNumber( "PositionX", poseX )
         self.__ntTbl__.putNumber( "PositionY", poseY )
-        self.__ntTbl__.putNumber( "PositionR", poseR )
-        self.__ntTbl__.putNumber( "Gyro", self.gyro.getYaw() )
+        self.__ntTbl__.putNumber( "Rotation", poseR )
+        self.__ntTbl__.putNumber( "zGyro-Yaw", gyroY )
+        self.__ntTbl__.putNumber( "zGyro-Pitch", gyroP )
+        self.__ntTbl__.putNumber( "zGyro-Roll", gyroR )
 
         if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
             poseX = 16.523 - poseX
             poseY = 8.013 - poseY
-            poseR = 180 - poseR
+            poseR = poseR - 180
  
         robotName = "Robot"
         if not RobotBase.isReal(): robotName = "SimRobot"

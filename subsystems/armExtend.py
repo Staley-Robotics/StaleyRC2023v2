@@ -15,14 +15,16 @@ import math
 
 # FRC Component Imports
 from commands2 import SubsystemBase
-from ctre import WPI_TalonSRX, TalonSRX, FeedbackDevice, NeutralMode, ControlMode
+from ctre import WPI_TalonSRX, FeedbackDevice, NeutralMode, ControlMode
 from wpilib import RobotState
+from ntcore import *
 
 # Our Imports
 
 
 ### Constants
 # Module Physical Constants
+extend_manualMoveRate:int = 880 # Ticks Per 20ms (total distance in 0.5 seconds)
 
 # Controller Constants
 extend_kP = 0.30
@@ -36,99 +38,121 @@ extend_position_min = 0
 extend_position_max = 22000
 extend_position_start = 5
 
+extend_length_inches = 15.0
+extend_ticksPerInch = ( extend_position_max - extend_position_min ) / extend_length_inches
+
 # Motion Magic Constants
 extend_mmMaxVelocity = 2048
-extend_mmMaxAcceleration = 2048
-extend_mmSCurveSmoothing = 0
-extend_kMaxSpeedMetersPerSecond = 3
-extend_kMaxAccelMetersPerSecondSq = 3
-extend_kMaxAngularSpeedMetersPerSecond = math.pi
-extend_kMaxAngularAccelMetersPerSecondSq = math.pi
+extend_mmMaxAcceleration = 2 * extend_mmMaxVelocity # Reach Max Speed in 1/2 second
+extend_mmSCurveSmoothing = 8 # 0-8 Motion Magic Smoothness
 
-
+# ArmExtend Subsystem Class
 class ArmExtend(SubsystemBase):
-    currentSetPosition:int = 0
     # Variables
-    extendMotor:WPI_TalonSRX = None
-    #stallDetector:MotorUtils = MotorUtils(0, 0.15, 0.15, PowerDistribution(0, PowerDistribution.ModuleType.kCTRE) )
+    __motor__:WPI_TalonSRX = None
+    __position__:int = 0
+    __ntTbl__:NetworkTable = NetworkTableInstance.getDefault().getTable( "ArmExtend" )
 
-    # Constructor
+    # Initialization
     def __init__(self):
-        super().__init__()
-
         # Extend Motor
-        self.extendMotor:WPI_TalonSRX = WPI_TalonSRX(31)
-        self.extendMotor.configFactoryDefault()
-        self.extendMotor.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0)
-        self.extendMotor.setSensorPhase(False)
-        self.extendMotor.setInverted(False)
-        self.extendMotor.setNeutralMode(NeutralMode.Brake)
-        self.extendMotor.selectProfileSlot(1, 0)
-        self.extendMotor.configNeutralDeadband(0.001)
-        self.extendMotor.setSelectedSensorPosition(0)
-        
-        #self.extendMotor.configFeedbackNotContinuous(True)
+        __motor__:WPI_TalonSRX = WPI_TalonSRX(31)
+        __motor__.configFactoryDefault()
+        __motor__.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0)
+        __motor__.setSensorPhase(False)
+        __motor__.setInverted(False)
+        __motor__.setNeutralMode(NeutralMode.Brake)
+        __motor__.selectProfileSlot(1, 0)
+        __motor__.configNeutralDeadband(0.001)
+        __motor__.setSelectedSensorPosition(0)
 
         # Extend PID
-        self.extendMotor.config_kP( 1, extend_kP )
-        self.extendMotor.config_kI( 1, extend_kI )
-        self.extendMotor.config_kD( 1, extend_kD )
-        self.extendMotor.config_kF( 1, extend_kF )
-        self.extendMotor.configAllowableClosedloopError( 1, extend_kError )
+        __motor__.config_kP( 1, extend_kP )
+        __motor__.config_kI( 1, extend_kI )
+        __motor__.config_kD( 1, extend_kD )
+        __motor__.config_kF( 1, extend_kF )
+        __motor__.configAllowableClosedloopError( 1, extend_kError )
 
-        #self.extendMotor.configMotionCruiseVelocity( drive_mmMaxVelocity )
-        #self.extendMotor.configMotionAcceleration( drive_mmMaxAcceleration )
-        #self.extendMotor.configMotionSCurveStrength( drive_mmSCurveSmoothing )
-
+        # Motion Magic
+        __motor__.configMotionCruiseVelocity( extend_mmMaxVelocity )
+        __motor__.configMotionAcceleration( extend_mmMaxAcceleration )
+        __motor__.configMotionSCurveStrength( extend_mmSCurveSmoothing )
 
         # Set Starting Position
-        self.currentSetPosition = 0
-        #self.setPosition( extend_position_start )
+        self.setPosition( __motor__.getSelectedSensorPosition(0) )
 
-        #self.getController().initSendable()
+        # Subsystem Setup
+        super().__init__()
         self.setSubsystem( "ArmExtend" )
         self.setName( "ArmExtend" )
-        self.addChild( "ExtendMotor", self.extendMotor )
+        self.addChild( "ExtendMotor", __motor__ )
+
+        # Save to Global Variables
+        self.__motor__ = __motor__
 
     def periodic(self) -> None:
-        if RobotState.isDisabled(): return None
+        # Put Telemetry on Shuffleboard
+        self.__ntTbl__.putNumber( "Position", self.getPosition() )
+        self.__ntTbl__.putNumber( "PositionInches", self.getPositionInches() )
+        self.__ntTbl__.putNumber( "CodeTarget", self.__position__ )
+        self.__ntTbl__.putNumber( "Target", self.getTargetPosition() )
+        self.__ntTbl__.putNumber( "Error", self.__motor__.getClosedLoopError(0) )
 
-        self.extendMotor.set(
+        # Don't Run Rest of Periodic While Disabled
+        #if RobotState.isDisabled(): return None
+
+        # Set Motor
+        self.__motor__.set(
             ControlMode.Position,
-            self.currentSetPosition
+            self.__position__
         )
 
     ### Extend Position Functions
-    # Sets the Extend Position
+    # Sets the Extend Position in Sensor Units
     def setPosition(self, position:int, override:bool = False) -> None:
         if not override:
-            position = max( min( position, extend_position_max ), extend_position_min ) # Verify position is in range
-        self.currentSetPosition = position
+            position = min( max( position, extend_position_min ), extend_position_max )
+        self.__position__ = position
+
+    # Get the Current Extend Position in Sensor Units
+    def getPosition(self) -> int:
+        position = self.__motor__.getSelectedSensorPosition(0)
+        return int( position )
 
     # Move Position by Joystick Float
-    def movePosition(self, input:float, override:bool = False) -> None:
-        self.currentSetPosition += input * 500
-        if not override:
-            self.currentSetPosition = max( min( self.currentSetPosition, extend_position_max ), extend_position_min )
-
-    # Get the Current Extend Position
-    def getPosition(self) -> int:
-        position = self.extendMotor.getSelectedSensorPosition(0)
-        return int( position )
+    def movePosition(self, input:float) -> None:
+        position = self.getPosition() + int( input * extend_manualMoveRate )
+        self.setPosition( position )
 
     # Reset the Current Position and Sensor Settings
     def resetPosition(self) -> None:
-        self.extendMotor.setSelectedSensorPosition( 0 )
-        self.currentSetPosition = 0
+        self.__motor__.setSelectedSensorPosition( 0 )
+        self.__position__ = 0
+
+    # Set Extend Position in Inches
+    def setPositionInches(self, inches:float) -> None:
+        ticks:int = inches * extend_ticksPerInch
+        self.setPosition( ticks )
+
+    # Get Extend Position in Inches
+    def getPositionInches(self) -> float:
+        ticks = self.getPosition()
+        inches:float = float( ticks / extend_ticksPerInch )
+        inches = round( inches, 3 )
+        return float( inches )
+
+    # Get Extend Position Target
+    def getTargetPosition(self) -> int:
+        return int( self.__motor__.getClosedLoopTarget() )
     
-    def getSetPosition(self) -> int:
-        return int( self.currentSetPosition )
-
-    # Get the Extend Position Target 
-    def getPositionTarget(self) -> int:
-        return int( self.extendMotor.getClosedLoopTarget() )
-
+    # Get Extend Position Target in Inches
+    def getTargetPositionInches(self) -> float:
+        ticks = self.getTargetPosition()
+        inches:float = float( ticks / extend_ticksPerInch )
+        inches = round( inches, 3 )
+        return float( inches )
+    
     # Is the Extend Motor at the set Position?
     def atPosition(self) -> bool:
-        atPosition = abs( self.extendMotor.getClosedLoopError() ) < extend_kError
+        atPosition = abs( self.__motor__.getClosedLoopError() ) < extend_kError
         return atPosition

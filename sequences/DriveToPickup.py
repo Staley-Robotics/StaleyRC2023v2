@@ -18,10 +18,10 @@ kMaxAngularSpeedMetersPerSecond = math.pi
 kMaxAngularAccelMetersPerSecondSq = math.pi
 
 class DriveToPickup(ConditionalCommand):
-    def __init__(self, swerveDrive:SwerveDrive):        
+    def __init__(self, swerveDrive:SwerveDrive, nav:Navigation):        
         super().__init__(
-            self.DriveToPickupPath(swerveDrive, False),
-            self.DriveToPickupPath(swerveDrive, True),
+            self.DriveToPickupPath(swerveDrive, nav, False),
+            self.DriveToPickupPath(swerveDrive, nav, True),
             lambda: DriverStation.getAlliance() == DriverStation.Alliance.kBlue
         )
         self.setName( "DriveToPickup" )
@@ -31,13 +31,14 @@ class DriveToPickup(ConditionalCommand):
     class DriveToPickupPath(SequentialCommandGroup):
         __ntTbl__ = NetworkTableInstance.getDefault().getTable( "Navigation" )
 
-        def __init__(self, swerveDrive:SwerveDrive, isRedAlliance:bool=False):
+        def __init__(self, swerveDrive:SwerveDrive, nav:Navigation, isRedAlliance:bool=False):
             super().__init__( commands=() )
             alliance = "Blue" if not isRedAlliance else "Red"
             self.setName( f"DriveToPickupPath-{alliance}" )
             self.addRequirements( swerveDrive )
             self.DriveTrain = swerveDrive
-            self.isRedAlliance = isRedAlliance
+            self.__nav__ = nav
+            self.__isRedAlliance__ = isRedAlliance
 
             rDropoffRobotMiddle = ChargedUp.getRow("DropoffRobotMiddle")
             rChargeNear = ChargedUp.getRow("ChargeNear")
@@ -91,49 +92,35 @@ class DriveToPickup(ConditionalCommand):
                 ConditionalCommand(
                     dALeft,
                     commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMax=rChargeNear, yMin=cChargeEdgeRight, yMax=cChargeEdgeLeft ) and self.isExitLeft()
+                    lambda: self.isPoseValid( xMax=rChargeNear, yMin=cChargeEdgeLeft, yMax=cChargeEdgeRight ) and self.isExitLeft()
                 )
             )
             self.addCommands(
                 ConditionalCommand(
                     dARight,
                     commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMax=rChargeNear, yMin=cChargeEdgeRight, yMax=cChargeEdgeLeft ) and self.isExitRight()
+                    lambda: self.isPoseValid( xMax=rChargeNear, yMin=cChargeEdgeLeft, yMax=cChargeEdgeRight ) and self.isExitRight()
                 )
             )
             self.addCommands(
                 ConditionalCommand(
-                    dBLeft,
+                    DriveToPose( swerveDrive, lambda: Pose2d( self.getNearestMe( [tALeft, tARight] ), swerveDrive.getRobotAngle() ) ),
                     commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMax=rChargeNear, yMin=cChargeBalanceLeft ) #, yMax=cPickupDropoffEdge )
+                    lambda: self.isPoseValid( xMax=rChargeNear, yMin=cChargeEdgeLeft, yMax=cChargeEdgeRight )
                 )
             )
             self.addCommands(
                 ConditionalCommand(
-                    dBRight,
+                    DriveToPose( swerveDrive, lambda: Pose2d( self.getNearestMe( [tBLeft, tBRight] ), swerveDrive.getRobotAngle() ) ),
                     commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMax=rChargeNear, yMax=cChargeBalanceRight )
+                    lambda: self.isPoseValid( xMax=rChargeNear )
                 )
             )
             self.addCommands(
                 ConditionalCommand(
-                    dCLeft,
+                    DriveToPose( swerveDrive, lambda: Pose2d( self.getNearestMe( [tCLeft, tCMiddle, tCRight] ), swerveDrive.getRobotAngle() ) ),
                     commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMax=rSafeExit, yMin=cChargeEdgeLeft ) #, yMax=cPickupDropoffEdge )
-                )
-            )
-            self.addCommands(
-                ConditionalCommand(
-                    dCMiddle,
-                    commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMax=rSafeExit, yMin=cChargeEdgeRight, yMax=cChargeEdgeLeft )
-                )
-            )
-            self.addCommands(
-                ConditionalCommand(
-                    dCRight,
-                    commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMax=rSafeExit, yMax=cChargeEdgeRight )
+                    lambda: self.isPoseValid( xMax=rSafeExit )
                 )
             )
             self.addCommands(
@@ -164,13 +151,19 @@ class DriveToPickup(ConditionalCommand):
                     lambda: self.isPoseValid( xMax=rPickupEdge ) and self.isPickupRight()
                 )
             )
+            self.addCommands(
+                ConditionalCommand(
+                    DriveToPose( swerveDrive, lambda: Pose2d( self.getNearestMe( [tFLeft, tFRight] ), Rotation2d(0).fromDegrees(0) ) ),
+                    commands2.cmd.nothing(),
+                    lambda: self.isPoseValid( xMax=rPickupEdge )
+                )
+            )
+            
 
         def isExitLeft(self) -> bool:
             exit = self.__ntTbl__.getString( "ExitZone", "None" )
-            if self.isRedAlliance:
-                return exit == "Right"
-            else:
-                return exit == "Left"
+            value = "Left" if not self.__isRedAlliance__ else "Right"
+            return exit == value
         
         def isExitMiddle(self) -> bool:
             exit = self.__ntTbl__.getString( "ExitZone", "None" )
@@ -178,25 +171,31 @@ class DriveToPickup(ConditionalCommand):
         
         def isExitRight(self) -> bool:
             exit = self.__ntTbl__.getString( "ExitZone", "None" )
-            if self.isRedAlliance:
-                return exit == "Left"
-            else:
-                return exit == "Right"
+            value = "Right" if not self.__isRedAlliance__ else "Left"
+            return exit == value
 
         def isPickupLeft(self) -> bool:
             exit = self.__ntTbl__.getString( "PickupZone", "None" )
-            if self.isRedAlliance:
-                return exit == "Right"
-            else:
-                return exit == "Left"
+            value = "Left" if not self.__isRedAlliance__ else "Right"
+            return exit == value
         
         def isPickupRight(self) -> bool:
             exit = self.__ntTbl__.getString( "PickupZone", "None" )
-            if self.isRedAlliance:
-                return exit == "Left"
-            else:
-                return exit == "Right"
+            value = "Right" if not self.__isRedAlliance__ else "Left"
+            return exit == value
         
+        def getNearestMe(self, translations:list[Translation2d]) -> Translation2d:
+            me = self.DriveTrain.getPose().translation()
+            goto = me.nearest( translations )
+            return goto
+        
+        def getNearestGoal(self, translations:list[Translation2d]) -> Translation2d:
+            isRed = DriverStation.getAlliance() == DriverStation.Alliance.kRed
+            column = self.__nav__.getZone("Community").getSelectedValue()
+            goal = ChargedUp.getTranslation( "DropoffRobotNormal", column, isRed)
+            goto = goal.nearest( translations )
+            return goto
+
         def isPoseValid( self,
                         xMin:float = None,
                         xMax:float = None,

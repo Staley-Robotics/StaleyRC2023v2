@@ -18,10 +18,10 @@ kMaxAngularSpeedMetersPerSecond = math.pi
 kMaxAngularAccelMetersPerSecondSq = math.pi
 
 class DriveToDropoff(ConditionalCommand):
-    def __init__(self, swerveDrive:SwerveDrive):        
+    def __init__(self, swerveDrive:SwerveDrive, nav:Navigation):        
         super().__init__(
-            self.DriveToDropoffPath(swerveDrive, False),
-            self.DriveToDropoffPath(swerveDrive, True),
+            self.DriveToDropoffPath(swerveDrive, nav, False),
+            self.DriveToDropoffPath(swerveDrive, nav, True),
             lambda: DriverStation.getAlliance() == DriverStation.Alliance.kBlue
         )
         self.setName( "DriveToDropoff" )
@@ -31,12 +31,14 @@ class DriveToDropoff(ConditionalCommand):
     class DriveToDropoffPath(SequentialCommandGroup):
         __ntTbl__ = NetworkTableInstance.getDefault().getTable("Navigation")
 
-        def __init__(self, swerveDrive:SwerveDrive, isRedAlliance:bool=False):
+        def __init__(self, swerveDrive:SwerveDrive, nav:Navigation, isRedAlliance:bool=False):
             super().__init__( commands=() )
             alliance = "Blue" if not isRedAlliance else "Red"
             self.setName( f"DriveToDropoffPath-{alliance}" )
             self.addRequirements( swerveDrive )
             self.DriveTrain = swerveDrive
+            self.__nav__ = nav
+            self.__isRedAlliance__ = isRedAlliance
 
             rDropoffRobotMiddle = ChargedUp.getRow("DropoffRobotMiddle")
             rChargeNear = ChargedUp.getRow("ChargeNear")
@@ -62,9 +64,9 @@ class DriveToDropoff(ConditionalCommand):
 
             tA = Translation2d( rPickupEntry, cPickupRight )
 
-            tBLeft = Translation2d( rSafeExit, cSafeExitLeft )
-            tBMiddle = Translation2d( rSafeExit, cChargeBalanceMiddle )
-            tBRight = Translation2d( rSafeExit, cSafeExitRight )
+            tBLeft = Translation2d( rChargeFar, cSafeExitLeft )
+            tBMiddle = Translation2d( rChargeFar, cChargeBalanceMiddle )
+            tBRight = Translation2d( rChargeFar, cSafeExitRight )
 
             tCLeft = Translation2d( rDropoffRobotMiddle, cSafeExitLeft )
             tCMiddle = Translation2d( rDropoffRobotMiddle, cChargeBalanceMiddle )
@@ -72,13 +74,14 @@ class DriveToDropoff(ConditionalCommand):
 
             dA       = DriveToPose( swerveDrive, lambda: Pose2d( tA,       Rotation2d(0).fromDegrees(-90) ) )
             dBLeft   = DriveToPose( swerveDrive, lambda: Pose2d( tBLeft,   Rotation2d(0).fromDegrees(180) ) )
+            dBLeft2  = DriveToPose( swerveDrive, lambda: Pose2d( tBLeft,   Rotation2d(0).fromDegrees(180) ) )
             dBMiddle = DriveToPose( swerveDrive, lambda: Pose2d( tBMiddle, Rotation2d(0).fromDegrees(180) ) )
             dBRight  = DriveToPose( swerveDrive, lambda: Pose2d( tBRight,  Rotation2d(0).fromDegrees(180) ) )
             dBRight2 = DriveToPose( swerveDrive, lambda: Pose2d( tBRight,  Rotation2d(0).fromDegrees(180) ) )
             dCLeft   = DriveToPose( swerveDrive, lambda: Pose2d( tCLeft,   Rotation2d(0).fromDegrees(180) ) )
             dCMiddle = DriveToPose( swerveDrive, lambda: Pose2d( tCMiddle, Rotation2d(0).fromDegrees(180) ) )
             dCRight  = DriveToPose( swerveDrive, lambda: Pose2d( tCRight, Rotation2d(0).fromDegrees(180) ) )
-            #dD       = DriveToPose( swerveDrive, lambda: Pose2d( tCRight,  Rotation2d(0).fromDegrees(0) ) )
+            dD       = DriveToPose( swerveDrive, lambda: ChargedUp.getPose( "DropoffRobotNormal", nav.getZone("Community").getSelectedValue(), 180, isRedAlliance) )
             
             self.addCommands(
                 ConditionalCommand(
@@ -89,51 +92,37 @@ class DriveToDropoff(ConditionalCommand):
             )
             self.addCommands(
                 ConditionalCommand(
-                    dBLeft,
+                    dBLeft if not isRedAlliance else dBRight,
                     commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMin=rSafeExit, yMin=cChargeBalanceMiddle ) and self.isEnterLeft()
+                    lambda: self.isPoseValid( xMin=rGroundObject ) and self.isEnterLeft()
                 )
             )
             self.addCommands(
                 ConditionalCommand(
-                    dBMiddle,
+                    dBRight if not isRedAlliance else dBLeft,
                     commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMin=rChargeNear ) and self.isEnterMiddle()
+                    lambda: self.isPoseValid( xMin=rGroundObject ) and self.isEnterRight()
                 )
             )
             self.addCommands(
                 ConditionalCommand(
-                    dBRight,
+                    DriveToPose( swerveDrive, lambda: Pose2d( self.getNearestGoal( [tBLeft, tBRight] ), Rotation2d(0).fromDegrees(180) ) ),
                     commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMin=rSafeExit ) and self.isEnterRight()
+                    lambda: self.isPoseValid( xMin=rGroundObject )
                 )
             )
             self.addCommands(
                 ConditionalCommand(
-                    dBRight2,
+                    DriveToPose( swerveDrive, lambda: Pose2d( self.getNearestMe( [tCLeft, tCMiddle, tCRight] ), Rotation2d(0).fromDegrees(180) ) ),
                     commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMin=rSafeExit, yMax=cChargeBalanceMiddle )
+                    lambda: self.isPoseValid( xMin=rChargeNear )
                 )
             )
             self.addCommands(
                 ConditionalCommand(
-                    dCLeft,
+                    RepeatCommand( dD ),
                     commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMin=rDropoffRobotMiddle, yMin=cChargeBalanceLeft, yMax=cPickupRight )
-                )
-            )
-            self.addCommands(
-                ConditionalCommand(
-                    dCMiddle,
-                    commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMin=rDropoffRobotMiddle, xMax=rChargeFar, yMin=cChargeEdgeRight, yMax=cChargeEdgeLeft )
-                )
-            )
-            self.addCommands(
-                ConditionalCommand(
-                    dCRight,
-                    commands2.cmd.nothing(),
-                    lambda: self.isPoseValid( xMin=rDropoffRobotMiddle, yMax=cChargeBalanceRight )
+                    lambda: self.isPoseValid( xMax=rChargeNear )
                 )
             )
             
@@ -150,6 +139,18 @@ class DriveToDropoff(ConditionalCommand):
             exit = self.__ntTbl__.getString( "EntryZone", "None" )
             return exit == "Right"
         
+        def getNearestMe(self, translations:list[Translation2d]) -> Translation2d:
+            me = self.DriveTrain.getPose().translation()
+            goto = me.nearest( translations )
+            return goto
+        
+        def getNearestGoal(self, translations:list[Translation2d]) -> Translation2d:
+            isRed = DriverStation.getAlliance() == DriverStation.Alliance.kRed
+            column = self.__nav__.getZone("Community").getSelectedValue()
+            goal = ChargedUp.getTranslation( "DropoffRobotNormal", column, isRed)
+            goto = goal.nearest( translations )
+            return goto
+
         def isPoseValid( self,
                          xMin:float = None,
                          xMax:float = None,
@@ -164,7 +165,7 @@ class DriveToDropoff(ConditionalCommand):
             y = self.DriveTrain.getPose().Y()
             
             # Reverse Y variables if Red Alliance
-            if DriverStation.getAlliance == DriverStation.Alliance.kRed:
+            if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
                 temp = yMin
                 yMin = yMax
                 yMax = temp

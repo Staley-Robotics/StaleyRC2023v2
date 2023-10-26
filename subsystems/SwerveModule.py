@@ -29,7 +29,7 @@ from wpimath.geometry import Translation2d, Rotation2d
 driveMotorTicks = 2048
 angleMotorTicks = 2048
 angleSensorTicks = 4096
-driveGearRatio = 1/6.55 #Flipped Pulley (5.50, 6.55, 7.80), Flipped Gear (6.75, 7.36, 8.10)
+driveGearRatio = 1/7.36 #Flipped Pulley (5.50, 6.55, 7.80), Flipped Gear (6.75, 7.36, 8.10)
 wheelRadius = 0.0508
 
 # Controller Constants

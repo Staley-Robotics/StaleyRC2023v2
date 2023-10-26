@@ -1,5 +1,5 @@
 """
-Description: Pivot + Extending Arm
+Description: Pivot Arm
 Version:  1
 Date:  2023-10-03
 
@@ -7,6 +7,8 @@ Dependencies:
 - None
 
 CAN Network:  Default / RIO
+Motors:  TalonFX
+Sensors:  TalonSRX connected to Mag Encoder
 """
 
 
@@ -17,8 +19,9 @@ import math
 
 # FRC Component Imports
 from commands2 import SubsystemBase
-from ctre import WPI_TalonFX, TalonSRX, WPI_TalonSRX, FeedbackDevice, RemoteFeedbackDevice, NeutralMode, ControlMode, DemandType
-from wpilib import RobotBase, RobotState, Mechanism2d, MechanismLigament2d, MechanismObject2d, MechanismRoot2d, SmartDashboard
+from ctre import WPI_TalonFX, WPI_TalonSRX, FeedbackDevice, RemoteFeedbackDevice, NeutralMode, ControlMode, DemandType
+from wpilib import RobotState
+from ntcore import *
 
 # Our Imports
 
@@ -26,6 +29,8 @@ from wpilib import RobotBase, RobotState, Mechanism2d, MechanismLigament2d, Mech
 
 ### Constants
 # Module Physical Constants
+pivot_ticks:int = 4096
+pivot_manualMoveRate:int = 40 # Ticks Per 20 ms (total distance in 0.5 seconds)
 
 # Controller Constants
 pivot_kP = 1.50
@@ -35,30 +40,24 @@ pivot_kF = 0 # 0.065
 pivot_kError = 10
 
 # Position Constants
-pivot_position_min = -87.5
-pivot_position_max = 7.0
-pivot_position_start = 0.0
-
-pivot_ticks = 4096
-pivot_offset = 2438
+pivot_position_min = 2358 # 7.0 degrees
+pivot_position_horizontal = 2438 # 0.0 degrees
+pivot_position_max = 3433 # -87.5 degrees
 
 # Motion Magic Constants
 pivot_mmMaxVelocity = 2048
-pivot_mmMaxAcceleration = 2048
-pivot_mmSCurveSmoothing = 0
-pivot_kMaxSpeedMetersPerSecond = 3
-pivot_kMaxAccelMetersPerSecondSq = 3
-pivot_kMaxAngularSpeedMetersPerSecond = math.pi
-pivot_kMaxAngularAccelMetersPerSecondSq = math.pi
+pivot_mmMaxAcceleration = 2 * pivot_mmMaxVelocity # Reach Max Speed in 1/2 second
+pivot_mmSCurveSmoothing = 8 # 0-8 Motion Magic Smoothness
 
+# ArmPivot Subsystem Class
 class ArmPivot(SubsystemBase):
     # Variables
-    pivotMotor:WPI_TalonFX = None
-    #stallDetector:MotorUtils = MotorUtils(0, 0.15, 0.15, PowerDistribution(0, PowerDistribution.ModuleType.kCTRE) )
-    currentSetPosition:int = 0
+    __motor__:WPI_TalonFX = None
+    __position__:int = 0
+    __ntTbl__:NetworkTable = NetworkTableInstance.getDefault().getTable( "ArmPivot" )
 
+    # Initialization
     def __init__(self):
-        super().__init__()
         # Pivot Sensor
         self.pivotSensor:WPI_TalonSRX = WPI_TalonSRX( 10 ) #, "rio" )
         self.pivotSensor.configFactoryDefault()
@@ -67,97 +66,110 @@ class ArmPivot(SubsystemBase):
         self.pivotSensor.setInverted(True)
 
         # Pivot Motor
-        self.pivotMotor = WPI_TalonFX(9, "rio")
-        self.pivotMotor.configFactoryDefault()
-        #self.pivotMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, 0) # For Integrated Sensor
-        self.pivotMotor.configRemoteFeedbackFilter( self.pivotSensor, 0 ) # For Mag Encoder
-        self.pivotMotor.configSelectedFeedbackSensor( RemoteFeedbackDevice.RemoteSensor0, 0 ) # For Mag Encoder
-        self.pivotMotor.setSensorPhase(True)
-        self.pivotMotor.setInverted(True)
-        self.pivotMotor.setNeutralMode(NeutralMode.Brake)
-        self.pivotMotor.selectProfileSlot(1, 0)
-        self.pivotMotor.configNeutralDeadband(0.001)
+        __motor__ = WPI_TalonFX(9, "rio")
+        __motor__.configFactoryDefault()
+        __motor__.configRemoteFeedbackFilter( self.pivotSensor, 0 )
+        __motor__.configSelectedFeedbackSensor( RemoteFeedbackDevice.RemoteSensor0, 0 )
+        __motor__.setSensorPhase(True)
+        __motor__.setInverted(True)
+        __motor__.setNeutralMode(NeutralMode.Brake)
+        __motor__.selectProfileSlot(1, 0)
+        __motor__.configNeutralDeadband(0.001)
 
         # Pivot PID
-        self.pivotMotor.config_kP( 1, pivot_kP )
-        self.pivotMotor.config_kI( 1, pivot_kI )
-        self.pivotMotor.config_kD( 1, pivot_kD )
-        self.pivotMotor.config_kF( 1, pivot_kF )
-        self.pivotMotor.configAllowableClosedloopError( 1, pivot_kError )
+        __motor__.config_kP( 1, pivot_kP )
+        __motor__.config_kI( 1, pivot_kI )
+        __motor__.config_kD( 1, pivot_kD )
+        __motor__.config_kF( 1, pivot_kF )
+        __motor__.configAllowableClosedloopError( 1, pivot_kError )
 
         # Motion Magic
-        self.pivotMotor.configMotionCruiseVelocity( pivot_mmMaxVelocity )
-        self.pivotMotor.configMotionAcceleration( pivot_mmMaxAcceleration )
-        self.pivotMotor.configMotionSCurveStrength( pivot_mmSCurveSmoothing )
+        __motor__.configMotionCruiseVelocity( pivot_mmMaxVelocity )
+        __motor__.configMotionAcceleration( pivot_mmMaxAcceleration )
+        __motor__.configMotionSCurveStrength( pivot_mmSCurveSmoothing )
 
         # Set Starting Position
-        #self.currentSetPosition = pivot_position_start
-        self.currentSetPosition = -20 #-(self.pivotMotor.getSelectedSensorPosition(0) - pivot_offset) / pivot_ticks * 360
-        #self.setPosition( pivot_position_start )
+        self.setPosition( __motor__.getSelectedSensorPosition(0) )
 
-        #self.getController().initSendable()
+        # Subsystem Setup
+        super().__init__()
         self.setSubsystem( "ArmPivot" )
         self.setName( "ArmPivot" )
-        self.addChild( "PivotMotor", self.pivotMotor )
+        self.addChild( "PivotMotor", __motor__ )
 
-    noPrint = False
+        # Save to Global Variables
+        self.__motor__ = __motor__
+
+    # Periodic Loop (Runs every iteration of the )
     def periodic(self) -> None:
-        SmartDashboard.putNumber( "ArmPivot/Position", self.pivotMotor.getSelectedSensorPosition(0) )
-        SmartDashboard.putNumber( "ArmPivot/SensorPosition", self.pivotSensor.getSelectedSensorPosition(0) )
-        SmartDashboard.putNumber( "ArmPivot/Target", self.pivotMotor.getClosedLoopTarget(0) )
-        SmartDashboard.putNumber( "ArmPivot/Error", self.pivotMotor.getClosedLoopError(0) )
-        SmartDashboard.putNumber( "ArmPivot/InternalPos", self.currentSetPosition)
-        if RobotState.isDisabled(): return None
+        # Put Telemetry on Shuffleboard
+        self.__ntTbl__.putNumber( "Position", self.getPosition() )
+        self.__ntTbl__.putNumber( "PositionDegrees", self.getPositionDegrees() )
+        self.__ntTbl__.putNumber( "CodeTarget", self.__position__ )
+        self.__ntTbl__.putNumber( "Target", self.getTargetPosition() )
+        self.__ntTbl__.putNumber( "Error", self.__motor__.getClosedLoopError(0) )
+        
+        # Don't Run Rest of Periodic While Disabled
+        #if RobotState.isDisabled(): return None
 
-        kMeasuredPosHorizontal:int = 100000; #Position measured when arm is horizontal
-        kTicksPerDegree:float = 1024 #4096 / 360 #Sensor is 1:1 with arm rotation
-        currentPos:int = self.pivotMotor.getSelectedSensorPosition()
-        degrees:float = (currentPos - kMeasuredPosHorizontal) / kTicksPerDegree
-        radians:float = math.radians(degrees)
-        cosineScalar:float = math.cos(radians)
-
-        self.currentSetPosition = min( max( self.currentSetPosition, pivot_position_min ), pivot_position_max )
-        pos = self.currentSetPosition / -360 * pivot_ticks + pivot_offset
-        #print( self.currentSetPosition )
-        self.pivotMotor.set(
-            #ControlMode.MotionMagic,
-            ControlMode.Position,
-            pos #,
+        # Gravity Compensation
+        pos:float = self.getPositionRadians()
+        cosineScalar:float = math.cos(pos)
+        
+        # Set Motor
+        self.__motor__.set(
+            ControlMode.Position, #ControlMode.MotionMagic,
+            self.__position__ #,
             #DemandType.ArbitraryFeedForward,
             #pivot_kF * cosineScalar
         )
 
-        if not RobotBase.isReal():
-            #if not self.noPrint: print( f"Pivot: {self.pivotMotor.getSelectedSensorPosition()}\tTarget: {self.pivotMotor.getClosedLoopTarget()}\tError: {self.pivotMotor.getClosedLoopError()}" )
-            if self.pivotMotor.getClosedLoopError() > 0.0:
-                self.noPrint = False
-            else:
-                self.noPrint = True
-
-
 
     ### Pivot Position Functions
-    # Set Pivot Position
-    def setPosition(self, position:float) -> None:
-        position = max( min( position, pivot_position_max ), pivot_position_min ) # Verify position is in range
-        #scaledPos = (position-2) * 1024
-        self.currentSetPosition = position
-        #self.pivotMotor.set(ControlMode.Position, position)  ### Using periodic property
-        #print( f"Pivot: {position}" )
+    # Set Pivot Position in Sensor Units
+    def setPosition(self, ticks:int) -> None:
+        self.__position__ = min( max( ticks, pivot_position_min ), pivot_position_max )
 
-    def movePosition(self, degreesPerTick:float):
-        self.currentSetPosition += degreesPerTick * 4
-
-    # Get the Current Pivot Position
+    # Get the Current Pivot Position in Sensor Units
     def getPosition(self) -> int:
-        position = self.pivotMotor.getClosedLoopTarget() - self.pivotMotor.getClosedLoopError()
+        position = self.__motor__.getSelectedSensorPosition(0)
         return int( position )
+
+    # Move the Current Pivot Position
+    def movePosition(self, input:float) -> None:
+        position = self.getPosition() - int( input * 80 )
+        self.setPosition( position )
+
+    # Set Pivot Position in Degrees
+    def setPositionDegrees(self, degrees:float) -> None:
+        ticks:int = pivot_position_horizontal - ( degrees / 360.0 * pivot_ticks )
+        self.setPosition( ticks )
+
+    # Get the Current Pivot Position in Degrees
+    def getPositionDegrees(self) -> float:
+        ticks = self.getPosition()
+        degrees:float = ( pivot_position_horizontal - ticks ) / pivot_ticks * 360.0
+        degrees = round( degrees, 3 )
+        return float( degrees )
     
+    # Get the Current Pivot Position in Radians
+    def getPositionRadians(self) -> float:
+        degrees = self.getPositionDegrees()
+        radians = math.radians( degrees )
+        return float( radians )
+
     # Get the Pivot Position Target 
-    def getPositionTarget(self) -> int:
-        return int( self.pivotMotor.getClosedLoopTarget() )
+    def getTargetPosition(self) -> int:
+        return int( self.__motor__.getClosedLoopTarget() )
+    
+    # Get the Pivot Position Target in Degrees
+    def getTargetPositionDegrees(self) -> float:
+        ticks = self.getTargetPosition()
+        degrees:float = ( pivot_position_horizontal - ticks ) / pivot_ticks * 360.0
+        degrees = round( degrees, 3 )
+        return float( degrees )
     
     # Is the Pivotr Motor at the set Position?
     def atPosition(self) -> bool: 
-        atPosition = abs( self.pivotMotor.getClosedLoopError() ) < pivot_kError
+        atPosition = abs( self.__motor__.getClosedLoopError() ) < pivot_kError
         return atPosition

@@ -66,8 +66,13 @@ class ChargedUp:
         if isRedAlliance: y = ChargedUp.columns["ArenaLeft"] - y
         return y
     
-    def getPose(rowName, columnName, degrees, isRed:bool=False):
+    def getPose(rowName, columnName, degrees, isRed:bool=False) -> Pose2d:
+        translation = ChargedUp.getTranslation( rowName, columnName, isRed )
+        pose = Pose2d( translation, Rotation2d().fromDegrees( degrees ) )
+        return pose
+    
+    def getTranslation(rowName, columnName, isRed:bool=False) -> Translation2d:
         x = ChargedUp.getRow(rowName)
         y = ChargedUp.getCol(columnName, isRed)
-        pose = Pose2d( x, y, Rotation2d().fromDegrees( degrees ) )
-        return pose
+        translation = Translation2d( x, y )
+        return translation

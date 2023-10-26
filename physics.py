@@ -27,15 +27,18 @@ class TalonFxSimProfile(SimProfile):
     _pos:float = 0
     _vel:float = 0.0
 
-    def __init__(self, motor:TalonFX, accelTime:float, maxVelocity:float, sensorPhase:bool):
+    def __init__(self, motor:TalonFX, accelTime:float, maxVelocity:float, sensorPhase:bool, inverted:bool=False):
         self._motor = motor
         self._sim = motor.getSimCollection()
         self._accelTime = accelTime
         self._fullVel = maxVelocity
         self._sensorPhase = sensorPhase
+        self._inverted = inverted
 
     def run(self, period:float):
         outPerc = self._sim.getMotorOutputLeadVoltage() / 12 
+        if self._sensorPhase: outPerc *= -1
+
         accel = self._fullVel / self._accelTime * period * 10 #/ 1000
         theoryVeloc = outPerc * self._fullVel
 
@@ -48,13 +51,15 @@ class TalonFxSimProfile(SimProfile):
 
         current = abs(outPerc) * 30
         statorCurrent = 0 if outPerc == 0 else current / abs(outPerc)
+        busVoltage = 12 - outPerc * outPerc * 3/4 
+        if self._inverted: self._vel *= -1
 
         #print( f"{outPerc}, {accel}, {self.extendVeloc}" )
         self._sim.addIntegratedSensorPosition( int(self._vel * period * 100) )
         self._sim.setIntegratedSensorVelocity( int(self._vel) )
         self._sim.setSupplyCurrent( current )
         self._sim.setStatorCurrent( statorCurrent )
-        self._sim.setBusVoltage( 12 - outPerc * outPerc * 3/4 )
+        self._sim.setBusVoltage( busVoltage )
         pass
 
 class TalonSrxSimProfile(SimProfile):
@@ -116,6 +121,30 @@ class TalonFxCanSimProfile(SimProfile):
         #self._sim.setRawPosition( int( self._motor.getSelectedSensorPosition() ) )
         pass
 
+class TalonFxSrxSimProfile(SimProfile):
+    _simProfile:TalonFxSimProfile
+    _sensor:TalonSRX
+    _sim:TalonSRXSimCollection
+
+    def __init__(self, motor:TalonFX, accelTime:float, maxVelocity:float, sensorPhase:bool, sensor:TalonSRX, inverted:bool, ratio:float):
+        self._simProfile = TalonFxSimProfile( motor, accelTime, maxVelocity, sensorPhase, inverted )
+        self._sensor = sensor
+        self._sim = sensor.getSimCollection()
+        self.ratio = ratio
+        #self._sim.setQuadratureRawPosition( 3200 )
+
+    def run(self, period):
+        self._simProfile.run(period)
+        self._sim.setQuadratureVelocity( int( self._simProfile._vel / self.ratio ) )
+        self._sim.addQuadraturePosition( int( self._simProfile._vel * period * 10 / self.ratio )  )
+        self._sim.addPulseWidthPosition( int( self._simProfile._vel * period * 10 / self.ratio )  )
+        self._sim.addAnalogPosition( int( self._simProfile._vel * period * 10 / self.ratio )  )
+        #self._sim.setQuadratureVelocity( int( self._simProfile._vel ) )
+        #self._sim.setQuadratureRawPosition( int( self._simProfile._motor.getClosedLoopTarget() ) ) 
+        #self._sim.setPulseWidthPosition( int( self._simProfile._motor.getClosedLoopTarget() ) ) 
+        #self._sim.setAnalogPosition( int( self._simProfile._motor.getClosedLoopTarget() ) ) 
+        pass
+
 class PhysicsEngine:
     _simProfiles:typing.List[SimProfile] = []
 
@@ -139,8 +168,17 @@ class PhysicsEngine:
         self._simProfiles.append( TalonFxCanSimProfile( myRobot.m_robotContainer.swerveDrive.moduleBR.angleMotor, 1.0, 4150, False, myRobot.m_robotContainer.swerveDrive.moduleBR.angleSensor ) )
         
         # Arm Components
-        self._simProfiles.append( TalonFxSimProfile( myRobot.m_robotContainer.armPivot.pivotMotor, 1.0, 4150, False ) )
-        self._simProfiles.append( TalonSrxSimProfile( myRobot.m_robotContainer.armExtend.extendMotor, 1.0, 4150, False ) )
+        self._simProfiles.append( TalonFxSrxSimProfile( myRobot.m_robotContainer.armPivot.__motor__, 1.0, 41500, False, myRobot.m_robotContainer.armPivot.pivotSensor, True, 10 ) )
+        a:TalonSRXSimCollection = self._simProfiles[8]._sim
+        a.setQuadratureRawPosition( 3200 )
+        a.setPulseWidthPosition( 3200 )
+        a.setAnalogPosition( 3200 )
+        self._simProfiles.append( TalonSrxSimProfile( myRobot.m_robotContainer.armExtend.__motor__, 1.0, 4150, False ) )
+        e:TalonSRXSimCollection = self._simProfiles[9]._sim
+        e.setQuadratureRawPosition( 3200 )
+        e.setPulseWidthPosition( 3200 )
+        e.setAnalogPosition( 3200 )
+        
 
         self.physics_controller.field.setRobotPose( self.myRobot.m_robotContainer.swerveDrive.getPose() )
 

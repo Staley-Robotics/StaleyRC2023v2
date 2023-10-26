@@ -41,8 +41,8 @@ class RobotContainer:
         # SmartDashboard Commands
         SmartDashboard.putData(key="Lockdown",    data=DriveLockdown(self.swerveDrive))
         SmartDashboard.putData(key="ExtendReset", data=ArmExtendReset(self.armExtend))
-        SmartDashboard.putData(key="Pickup",      data=DriveToPickup(self.swerveDrive))
-        SmartDashboard.putData(key="Dropoff",     data=DriveToDropoff(self.swerveDrive))
+        SmartDashboard.putData(key="Pickup",      data=DriveToPickup(self.swerveDrive, self.navigation))
+        SmartDashboard.putData(key="Dropoff",     data=DriveToDropoff(self.swerveDrive, self.navigation))
 
         # Configure Default Commands
         self.configureDefaultCommands()
@@ -96,8 +96,8 @@ class RobotContainer:
         self.getDriver1().rightBumper().toggleOnTrue( ToggleHalfSpeed(self.swerveDrive) )
         #self.getDriver1().leftBumper().toggleOnTrue( DriveToPose(self.swerveDrive, lambda: Pose2d( Translation2d(2.0, 3), Rotation2d(0).fromDegrees(180))) )
         self.getDriver1().leftBumper().toggleOnTrue( NavigationToggleZone(self.navigation) )
-        self.getDriver1().X().whileTrue( DriveToPickup(self.swerveDrive) )
-        self.getDriver1().Y().whileTrue( DriveToDropoff(self.swerveDrive) )
+        self.getDriver1().X().whileTrue( DriveToPickup(self.swerveDrive, self.navigation) )
+        self.getDriver1().Y().whileTrue( DriveToDropoff(self.swerveDrive, self.navigation) )
 
         commands2.button.POVButton( self.getDriver1(),   0 ).whenPressed( commands2.cmd.nothing() )
         commands2.button.POVButton( self.getDriver1(), 180 ).whenPressed( commands2.cmd.nothing() )
