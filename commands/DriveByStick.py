@@ -16,7 +16,8 @@ from subsystems.SwerveDrive import SwerveDrive
 ### Constants
 # SwerveDrive Module Inputs
 driveDeadband = 0.04 # Deadband (Sensitivity towards Dead 0 on joystick)
-slrValue = 2 # Slew Rate Limiter (Sensitivity to how fast the joysticks bounds back to 0)
+#slrValue = 2 # Slew Rate Limiter (Sensitivity to how fast the joysticks bounds back to 0)
+halfSpeedMultiplier = 0.33
 
 # Default Drive Command Class
 class DriveByStick(CommandBase):
@@ -42,11 +43,11 @@ class DriveByStick(CommandBase):
         self.rO = rotate
 
         # Slew Rate Limiters
-        self.srl_vX = SlewRateLimiter( slrValue )
-        self.srl_vY = SlewRateLimiter( slrValue )
-        self.srl_hX = SlewRateLimiter( slrValue )
-        self.srl_hY = SlewRateLimiter( slrValue )
-        self.srl_rO = SlewRateLimiter( slrValue )
+        #self.srl_vX = SlewRateLimiter( slrValue )
+        #self.srl_vY = SlewRateLimiter( slrValue )
+        #self.srl_hX = SlewRateLimiter( slrValue )
+        #self.srl_hY = SlewRateLimiter( slrValue )
+        #self.srl_rO = SlewRateLimiter( slrValue )
 
         self.hPid = self.DriveSubsystem.getHolonomicPIDController()
         self.tPid = self.hPid.getThetaController()
@@ -83,14 +84,14 @@ class DriveByStick(CommandBase):
         r *= abs( r )
 
         # Slew Rate Limiter
-        x = self.srl_vX.calculate( x )
-        y = self.srl_vY.calculate( y )
+        #x = self.srl_vX.calculate( x )
+        #y = self.srl_vY.calculate( y )
         #hX = self.srl_hX.calculate( hX )
         #hY = self.srl_hY.calculate( hY )
-        r = self.srl_rO.calculate( r )
+        #r = self.srl_rO.calculate( r )
 
         # Calculate Half Speed
-        magnitude:float = 1.0 if not halfSpeed else 0.5
+        magnitude:float = 1.0 if not halfSpeed else halfSpeedMultiplier
         x *= magnitude
         y *= magnitude
         #r *= magnitude

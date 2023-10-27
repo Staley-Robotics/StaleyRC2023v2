@@ -55,7 +55,7 @@ class TalonFxSimProfile(SimProfile):
         if self._inverted: self._vel *= -1
 
         #print( f"{outPerc}, {accel}, {self.extendVeloc}" )
-        self._sim.addIntegratedSensorPosition( int(self._vel * period * 100) )
+        self._sim.addIntegratedSensorPosition( int(self._vel * period * 10) )
         self._sim.setIntegratedSensorVelocity( int(self._vel) )
         self._sim.setSupplyCurrent( current )
         self._sim.setStatorCurrent( statorCurrent )
@@ -97,7 +97,7 @@ class TalonSrxSimProfile(SimProfile):
         statorCurrent = 0 if outPerc ==0 else current / abs(outPerc)
 
         #print( f"{outPerc}, {accel}, {self.extendVeloc}" )
-        self._sim.addQuadraturePosition( int(self._vel * period * 100) )
+        self._sim.addQuadraturePosition( int(self._vel * period * 10) )
         self._sim.setQuadratureVelocity( int(self._vel) )
         self._sim.setSupplyCurrent( current )
         self._sim.setStatorCurrent( statorCurrent )
@@ -109,14 +109,15 @@ class TalonFxCanSimProfile(SimProfile):
     _sensor:CANCoder
     _sim:CANCoderSimCollection
 
-    def __init__(self, motor:TalonFX, accelTime:float, maxVelocity:float, sensorPhase:bool, sensor:CANCoder):
+    def __init__(self, motor:TalonFX, accelTime:float, maxVelocity:float, sensorPhase:bool, sensor:CANCoder, ratio:float):
         self._simProfile = TalonFxSimProfile( motor, accelTime, maxVelocity, sensorPhase )
         self._sensor = sensor
         self._sim = sensor.getSimCollection()
 
     def run(self, period):
         self._simProfile.run(period)
-        self._sim.setVelocity( int( self._simProfile._vel ) )
+        self._sim.setVelocity( int( self._simProfile._vel / 15.43  ) )
+        self._sim.addPosition( int( self._simProfile._vel / 15.43 ) )
         self._sim.setRawPosition( int( self._simProfile._motor.getClosedLoopTarget() ) ) #int( self._simProfile._vel * period * 100 ) )
         #self._sim.setRawPosition( int( self._motor.getSelectedSensorPosition() ) )
         pass
@@ -155,17 +156,17 @@ class PhysicsEngine:
         self.myRobot = myRobot
 
         # DriveTrain
-        self._simProfiles.append( TalonFxSimProfile( myRobot.m_robotContainer.swerveDrive.moduleFL.driveMotor, 1.0, 4150, False ) )
-        self._simProfiles.append( TalonFxCanSimProfile( myRobot.m_robotContainer.swerveDrive.moduleFL.angleMotor, 1.0, 4150, False, myRobot.m_robotContainer.swerveDrive.moduleFL.angleSensor ) )
+        self._simProfiles.append( TalonFxSimProfile( myRobot.m_robotContainer.swerveDrive.moduleFL.driveMotor, 1.0, 20749, False ) )
+        self._simProfiles.append( TalonFxCanSimProfile( myRobot.m_robotContainer.swerveDrive.moduleFL.angleMotor, 1.0, 20749, False, myRobot.m_robotContainer.swerveDrive.moduleFL.angleSensor, 15.43) )
 
-        self._simProfiles.append( TalonFxSimProfile( myRobot.m_robotContainer.swerveDrive.moduleFR.driveMotor, 1.0, 4150, False ) )
-        self._simProfiles.append( TalonFxCanSimProfile( myRobot.m_robotContainer.swerveDrive.moduleFR.angleMotor, 1.0, 4150, False, myRobot.m_robotContainer.swerveDrive.moduleFR.angleSensor ) )
+        self._simProfiles.append( TalonFxSimProfile( myRobot.m_robotContainer.swerveDrive.moduleFR.driveMotor, 1.0, 20749, False ) )
+        self._simProfiles.append( TalonFxCanSimProfile( myRobot.m_robotContainer.swerveDrive.moduleFR.angleMotor, 1.0, 20749, False, myRobot.m_robotContainer.swerveDrive.moduleFR.angleSensor, 15.43 ) )
         
-        self._simProfiles.append( TalonFxSimProfile( myRobot.m_robotContainer.swerveDrive.moduleBL.driveMotor, 1.0, 4150, False ) )
-        self._simProfiles.append( TalonFxCanSimProfile( myRobot.m_robotContainer.swerveDrive.moduleBL.angleMotor, 1.0, 4150, False, myRobot.m_robotContainer.swerveDrive.moduleBL.angleSensor ) )
+        self._simProfiles.append( TalonFxSimProfile( myRobot.m_robotContainer.swerveDrive.moduleBL.driveMotor, 1.0, 20749, False ) )
+        self._simProfiles.append( TalonFxCanSimProfile( myRobot.m_robotContainer.swerveDrive.moduleBL.angleMotor, 1.0, 20749, False, myRobot.m_robotContainer.swerveDrive.moduleBL.angleSensor, 15.43 ) )
         
-        self._simProfiles.append( TalonFxSimProfile( myRobot.m_robotContainer.swerveDrive.moduleBR.driveMotor, 1.0, 4150, False ) )
-        self._simProfiles.append( TalonFxCanSimProfile( myRobot.m_robotContainer.swerveDrive.moduleBR.angleMotor, 1.0, 4150, False, myRobot.m_robotContainer.swerveDrive.moduleBR.angleSensor ) )
+        self._simProfiles.append( TalonFxSimProfile( myRobot.m_robotContainer.swerveDrive.moduleBR.driveMotor, 1.0, 20749, False ) )
+        self._simProfiles.append( TalonFxCanSimProfile( myRobot.m_robotContainer.swerveDrive.moduleBR.angleMotor, 1.0, 20749, False, myRobot.m_robotContainer.swerveDrive.moduleBR.angleSensor, 15.43 ) )
         
         # Arm Components
         self._simProfiles.append( TalonFxSrxSimProfile( myRobot.m_robotContainer.armPivot.__motor__, 1.0, 41500, False, myRobot.m_robotContainer.armPivot.pivotSensor, True, 10 ) )

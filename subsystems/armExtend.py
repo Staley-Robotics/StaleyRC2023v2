@@ -24,7 +24,7 @@ from ntcore import *
 
 ### Constants
 # Module Physical Constants
-extend_manualMoveRate:int = 880 # Ticks Per 20ms (total distance in 0.5 seconds)
+extend_manualMoveRate:int = 4500 # Ticks Per 20ms (total distance in 0.5 seconds)
 
 # Controller Constants
 extend_kP = 0.30
@@ -35,10 +35,10 @@ extend_kError = 10
 
 # Position Constants
 extend_position_min = 0
-extend_position_max = 22000
+extend_position_max = 24400 #22000
 extend_position_start = 5
 
-extend_length_inches = 15.0
+extend_length_inches = 16.6 #15.0
 extend_ticksPerInch = ( extend_position_max - extend_position_min ) / extend_length_inches
 
 # Motion Magic Constants
@@ -98,9 +98,7 @@ class ArmExtend(SubsystemBase):
         self.__ntTbl__.putNumber( "Target", self.getTargetPosition() )
         self.__ntTbl__.putNumber( "Error", self.__motor__.getClosedLoopError(0) )
 
-        # Don't Run Rest of Periodic While Disabled
-        #if RobotState.isDisabled(): return None
-
+    def update(self) -> None:
         # Set Motor
         self.__motor__.set(
             ControlMode.Position,
@@ -154,5 +152,5 @@ class ArmExtend(SubsystemBase):
     
     # Is the Extend Motor at the set Position?
     def atPosition(self) -> bool:
-        atPosition = abs( self.__motor__.getClosedLoopError() ) < extend_kError
+        atPosition = abs( self.__position__ - self.getPosition() ) < extend_kError
         return atPosition

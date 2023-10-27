@@ -23,8 +23,8 @@ class ArmPivotPosition(CommandBase):
         dropTop:int = 7.0
         dropTopRelease:int = 5.0
 
-        dropMiddle:int = -1.0
-        dropMiddleRelease:int = -3.0
+        dropMiddle:int = -15.0
+        dropMiddleRelease:int = -18.0
 
         dropBottom:int = -60.0
         dropBottomRelease:int = -60.0
@@ -45,15 +45,17 @@ class ArmPivotPosition(CommandBase):
         super().__init__()
         self.setName( f"ArmPivotPosition" )
         self.addRequirements( armPivot )
-        self.armPivot = armPivot
+        self.__pivot__ = armPivot
 
         self.input = inputFunction
 
     def initialize(self) -> None:
         step = self.input()
-        self.armPivot.setPositionDegrees( step )
+        self.__pivot__.setPositionDegrees( step )
+        
+    def execute(self) -> None:
+        self.__pivot__.update()
 
-    def execute(self) -> None: pass
     def end(self, interrupted:bool) -> None: pass
-    def isFinished(self) -> bool: return self.armPivot.atPosition()
+    def isFinished(self) -> bool: return self.__pivot__.atPosition()
     def runsWhenDisabled(self) -> bool: return False

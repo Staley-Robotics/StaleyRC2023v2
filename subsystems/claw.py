@@ -39,20 +39,13 @@ class Claw(SubsystemBase):
         if self.solenoid.get() == DoubleSolenoid.Value.kOff:
             self.solenoid.set( DoubleSolenoid.Value.kReverse )
 
-    #def initSendable(self):
-    #    self.solenoid = DoubleSolenoid(0, PneumaticsModuleType.CTREPCM, 3, 5)
-    #    self.close()
-    #    pass
-
     ### Claw Function Commands
     # Open Claw
     def open(self):
-        print( "Claw: Open" )
         self.solenoid.set( DoubleSolenoid.Value.kForward )
 
     # Close Claw
     def close(self):
-        print( "Claw: Close" )
         self.solenoid.set( DoubleSolenoid.Value.kReverse )
 
     # Toggle Claw
@@ -63,11 +56,6 @@ class Claw(SubsystemBase):
             self.close()
         else:
             self.solenoid.toggle()
-            if( self.isOpen() ):
-                print( "Claw: Toggle - Open" )
-            else:
-                print( "Claw: Toggle - Close")
-
 
     ### Claw State Functions
     # Is Open?

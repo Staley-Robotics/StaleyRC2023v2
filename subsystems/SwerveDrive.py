@@ -12,7 +12,7 @@ Gyroscope:  PIGEON v2
 
 ### Imports
 # Python Imports
-import typing
+from typing import *
 import math
 
 # FRC Component Imports
@@ -23,6 +23,7 @@ from wpimath.controller import HolonomicDriveController, PIDController, Profiled
 from wpimath.geometry import Translation2d, Rotation2d, Pose2d
 from wpimath.kinematics import SwerveDrive4Kinematics, ChassisSpeeds, SwerveModuleState
 from wpimath.estimator import SwerveDrive4PoseEstimator
+from wpimath.filter import SlewRateLimiter
 from wpimath.trajectory import TrapezoidProfileRadians
 from ntcore import *
 
@@ -67,13 +68,20 @@ class SwerveDrive(SubsystemBase):
     motionMagic:BooleanProperty = BooleanProperty("motionMagic", False)
     holonomicPID:HolonomicDriveController = None
 
+    # Initialization
     def __init__(self):
+        # Subsystem Setup
         super().__init__()
         self.setSubsystem( "SwerveDrive" )
         self.setName( "SwerveDrive" )
 
+        # Robot Name
+        self.robotName = "Robot"
+        if not RobotBase.isReal(): self.robotName = "SimRobot"
+
         # Gyro
         self.gyro = WPI_Pigeon2( 61, "rio" )
+        self.gyro.reset()
         self.gyro.setYaw( gyroStartHeading )
         if RobotBase.isSimulation(): self.gyro.getSimCollection().setRawHeading( gyroStartHeading )
 
@@ -112,11 +120,11 @@ class SwerveDrive(SubsystemBase):
         )
 
         # Holonomic PID
-        xPid = PIDController( 0.40, 0, 0 )
+        xPid = PIDController( 1.0, 0, 0 )
         xPid.setTolerance( 0.05 )
         xPid.reset()
 
-        yPid = PIDController( 0.40, 0, 0 )
+        yPid = PIDController( 1.0, 0, 0 )
         yPid.setTolerance( 0.05 )
         yPid.reset()
 
@@ -126,7 +134,7 @@ class SwerveDrive(SubsystemBase):
         )
         tPid = ProfiledPIDControllerRadians( 2, 0, 0, tPidConstraints )
         tPid.enableContinuousInput( -math.pi, math.pi )
-        tPid.setTolerance( 0.00436 )
+        tPid.setTolerance( 0.00872 ) #436 )
         tPid.reset( self.getRobotAngle().radians() )
 
         self.holonomicPID = HolonomicDriveController(
@@ -135,34 +143,13 @@ class SwerveDrive(SubsystemBase):
             tPid
         )
         
+        self.srl_vx = SlewRateLimiter( 12 )
+        self.srl_vy = SlewRateLimiter( 12 )
+        self.srl_vr = SlewRateLimiter( 12 )
+
         # Field on Shuffleboard
         SmartDashboard.putData("Field", Field2d())
 
-    ### Drive Based Functions
-    # Stop Drivetrain
-    def stop(self): # -> CommandBase:
-        self.runChassisSpeeds( ChassisSpeeds(0,0,0) )
-        #return self.runOnce(
-        #    lambda: self.runChassisSpeeds( ChassisSpeeds(0,0,0) )
-        #)
-
-    # Returns Halfspeed Mode Status
-    def isHalfspeed(self):
-        return self.halfSpeed.get()
-
-    # Returns Field Relative Status
-    def isFieldRelative(self):
-        return self.fieldRelative.get()
-
-    ### PID Controller
-    def getHolonomicPIDController(self) -> HolonomicDriveController:
-        return self.holonomicPID
-
-    ### Kinematics
-    def getKinematics(self) -> SwerveDrive4Kinematics:
-        return self.kinematics
-
-    ### ODOMETRY
     # Update Odometry Information on each loop
     def periodic(self):
         # Odometry from Module Position Data
@@ -181,40 +168,56 @@ class SwerveDrive(SubsystemBase):
         poseX = round( pose.X(), 3 )
         poseY = round( pose.Y(), 3 )
         poseR = round( pose.rotation().degrees(), 3 )
-        gyroY = round( self.gyro.getYaw(), 3 )
-        gyroP = round( self.gyro.getPitch(), 3 )
-        gyroR = round( self.gyro.getRoll(), 3 )
-
+        
         self.__ntTbl__.putNumber( "PositionX", poseX )
         self.__ntTbl__.putNumber( "PositionY", poseY )
         self.__ntTbl__.putNumber( "Rotation", poseR )
-        self.__ntTbl__.putNumber( "zGyro-Yaw", gyroY )
-        self.__ntTbl__.putNumber( "zGyro-Pitch", gyroP )
-        self.__ntTbl__.putNumber( "zGyro-Roll", gyroR )
 
         if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
             poseX = 16.523 - poseX
             poseY = 8.013 - poseY
             poseR = poseR - 180
  
-        robotName = "Robot"
-        if not RobotBase.isReal(): robotName = "SimRobot"
-
         SmartDashboard.putNumberArray(
-            f"Field/{robotName}",
+            f"Field/{self.robotName}",
             [ poseX, poseY, poseR ]
         )
-        
-    # Resync the Gyro
-    def syncGyro(self) -> None:
-        poseDegrees = self.getPose().rotation().degrees()
-        gyroDegrees = self.gyro.getAngle()
-        degreesDiff = gyroDegrees - poseDegrees
-        if ( abs(degreesDiff) < 0.1 ):
-            pose = self.getPose()
-            self.gyro.setYaw( pose.rotation().degrees() )
-            print( f"Gyro Off by: {degreesDiff} Degrees | Resetting Gryo to {poseDegrees}")
 
+
+    ### Drive Based Functions
+    # Stop Drivetrain
+    def stop(self): # -> CommandBase:
+        self.runChassisSpeeds( ChassisSpeeds(0,0,0) )
+
+
+
+    # Returns Halfspeed Mode Status
+    def isHalfspeed(self):
+        return self.halfSpeed.get()
+
+    # Returns Field Relative Status
+    def isFieldRelative(self):
+        return self.fieldRelative.get()
+
+    # Enable / Disable Motion Magic
+    def setMotionMagic(self) -> None:
+        mmValue = self.motionMagic.get()
+        self.moduleFL.setMotionMagic( mmValue )
+        self.moduleFR.setMotionMagic( mmValue )
+        self.moduleBL.setMotionMagic( mmValue )
+        self.moduleBR.setMotionMagic( mmValue )
+
+
+
+    #### Get 
+    # PID Controller
+    def getHolonomicPIDController(self) -> HolonomicDriveController:
+        return self.holonomicPID
+
+    # Kinematics
+    def getKinematics(self) -> SwerveDrive4Kinematics:
+        return self.kinematics
+       
     # Get Odometry Object
     def getOdometry(self) -> SwerveDrive4PoseEstimator:
         return self.odometry
@@ -227,6 +230,7 @@ class SwerveDrive(SubsystemBase):
     def getRobotAngle(self) -> Rotation2d:
         return self.gyro.getRotation2d()
 
+    # Get ChassisSpeeds
     def getChassisSpeeds(self) -> ChassisSpeeds:
         return self.kinematics.toChassisSpeeds(
             self.moduleFL.getModuleState(),
@@ -234,22 +238,39 @@ class SwerveDrive(SubsystemBase):
             self.moduleBL.getModuleState(),
             self.moduleBR.getModuleState()
         )
+    
 
+
+
+    
     ### Run SwerveDrive Functions
     def runPercentageInputs(self, x:float = 0.0, y:float = 0.0, r:float = 0.0) -> ChassisSpeeds:
+        veloc_x = x * maxVelocity
+        veloc_y = y * maxVelocity
+        veloc_r = r * maxAngularVelocity
+
+        veloc_x = self.srl_vx.calculate( veloc_x )
+        veloc_y = self.srl_vy.calculate( veloc_y )
+        veloc_r = self.srl_vr.calculate( veloc_r )
+
         if self.fieldRelative.get():
             speeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-                vx = x * maxVelocity,
-                vy = y * maxVelocity,
-                omega = r * maxAngularVelocity,
+                vx = veloc_x,
+                vy = veloc_y,
+                omega = veloc_r, # radians per second
                 robotAngle = self.getRobotAngle()
             )
         else:
             speeds = ChassisSpeeds(
-                vx = x * maxVelocity,
-                vy = y * maxVelocity,
-                omega = r * maxAngularVelocity
+                vx = veloc_x,
+                vy = veloc_y,
+                omega = veloc_r
             )
+
+        self.holonomicPID.getThetaController().reset(
+            self.gyro.getRotation2d().radians(),
+            veloc_r
+        )
 
         # Send ChassisSpeeds
         self.runChassisSpeeds(speeds)
@@ -262,16 +283,7 @@ class SwerveDrive(SubsystemBase):
         self.runSwerveModuleStates(list(modStates))
 
     # Run SwerveDrive using SwerveModuleStates
-    noPrint = False
-    def runSwerveModuleStates(self, states:typing.List[SwerveModuleState]) -> None:
-        # Print Output in Simulation Environment
-        if not RobotBase.isReal():
-            #if not self.noPrint: print( states )
-            if states[0].speed != 0.0 and states[1].speed != 0.0 and states[2].speed != 0.0 and states[3].speed != 0.0:
-                self.noPrint = False
-            else:
-                self.noPrint = True
-    
+    def runSwerveModuleStates(self, states:List[SwerveModuleState]) -> None:
         # Update Desired State for each Swerve Module
         modStates = SwerveDrive4Kinematics.desaturateWheelSpeeds(states, maxVelocity)
         self.moduleFL.setDesiredState(modStates[0])
@@ -279,11 +291,4 @@ class SwerveDrive(SubsystemBase):
         self.moduleBL.setDesiredState(modStates[2])
         self.moduleBR.setDesiredState(modStates[3])
 
-
-    def setMotionMagic(self) -> None:
-        mmValue = self.motionMagic.get()
-        self.moduleFL.setMotionMagic( mmValue )
-        self.moduleFR.setMotionMagic( mmValue )
-        self.moduleBL.setMotionMagic( mmValue )
-        self.moduleBR.setMotionMagic( mmValue )
 

@@ -64,7 +64,7 @@ class ArmExtendPosition(CommandBase):
         self.armExtend.setPosition( pos )
 
     def execute(self) -> None: 
-        pass
+        self.armExtend.update()
 
     def end(self, interrupted:bool) -> None:
         pass

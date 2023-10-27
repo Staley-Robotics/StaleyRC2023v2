@@ -17,12 +17,12 @@ import math
 
 # FRC Component Imports
 from commands2 import SubsystemBase
-from ctre import WPI_TalonFX, ControlMode, FeedbackDevice, RemoteFeedbackDevice, NeutralMode
+from ctre import WPI_TalonFX, ControlMode, FeedbackDevice, RemoteFeedbackDevice, NeutralMode, TalonFXPIDSetConfiguration
 from ctre.sensors import WPI_CANCoder, SensorInitializationStrategy, AbsoluteSensorRange
 from wpilib import RobotBase, RobotState
 from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
 from wpimath.geometry import Translation2d, Rotation2d
-
+from wpiutil import *
 
 ### Constants
 # Module Physical Constants
@@ -33,14 +33,13 @@ driveGearRatio = 1/7.36 #Flipped Pulley (5.50, 6.55, 7.80), Flipped Gear (6.75, 
 wheelRadius = 0.0508
 
 # Controller Constants
-slewratesteps = 200000
 drive_kP = 0.15
 drive_kI = 0
 drive_kD = 0
 drive_kF = 0.065
 drive_kSlotIdx = 0
-drive_mmMaxVelocity = 2048
-drive_mmMaxAcceleration = 2048
+drive_mmMaxVelocity = 20480
+drive_mmMaxAcceleration = 4 * drive_mmMaxVelocity
 drive_mmSCurveSmoothing = 8
 
 angle_kP = 0.5
@@ -49,8 +48,8 @@ angle_kD = 0
 angle_kF = 0
 angle_kSlotIdx = 0
 angle_mmMaxVelocity = 2048
-angle_mmMaxAcceleration = 2048
-angle_mmSCurveSmoothing = 0
+angle_mmMaxAcceleration = 2 * angle_mmMaxVelocity
+angle_mmSCurveSmoothing = 8
 
 # Class: SwerveModule
 class SwerveModule(SubsystemBase):
@@ -85,7 +84,7 @@ class SwerveModule(SubsystemBase):
         self.angleMotor.setNeutralMode(NeutralMode.Coast)
         self.angleMotor.configFeedbackNotContinuous(True)
         self.angleMotor.configNeutralDeadband(0.001)
-        
+
         # Drive Motor
         self.driveMotor = WPI_TalonFX( driveId, "canivore1")
         self.driveMotor.configFactoryDefault()
@@ -133,31 +132,7 @@ class SwerveModule(SubsystemBase):
         self.moduleState = SwerveModuleState( 0, Rotation2d(0) )
 
     def periodic(self) -> None:
-        # Only Run Code During Enabled Mode
-        if RobotState.isDisabled(): return
-
-        # Velocity Calculate
-        velocity = self.moduleState.speed
-        velocityTp100ms = getVelocityMpsToTp100ms(velocity, driveMotorTicks, wheelRadius, driveGearRatio ) # Get Velocity in Ticks per 100 ms
-        # Set Velocity
-        self.driveMotor.set( ControlMode.Velocity, velocityTp100ms )
-        #if self.motionMagic:
-        #    # Convert Velocity to Predicted Position
-        #    measuredPosition = self.driveMotor.getSelectedSensorPosition(0)
-        #    targetPosition = measuredPosition + ( velocityTp100ms / 5 )
-        #    self.driveMotor.set( ControlMode.MotionMagic, targetPosition )
-        #else:
-        #    self.driveMotor.set( ControlMode.Velocity, velocityTp100ms )
-
-        # Angle Position Calculate
-        currentTicks = self.angleMotor.getSelectedSensorPosition(0)
-        targetTicks = getTicksFromRotation(self.moduleState.angle, angleSensorTicks)  # Get Optomized Target as Ticks
-        positionTicks = getContinuousInputMeasurement(currentTicks, targetTicks, angleSensorTicks)  # Correction for [-180,180)
-        # Set Angle Position
-        if self.motionMagic:
-            self.angleMotor.set( ControlMode.MotionMagic, positionTicks )
-        else:
-            self.angleMotor.set( ControlMode.Position, positionTicks )
+        pass
 
     def setDesiredState(self, desiredState:SwerveModuleState):
         ### Calculate / Optomize
@@ -168,6 +143,28 @@ class SwerveModule(SubsystemBase):
             currentAngleRotation
         )
         self.moduleState = optimalState
+
+        # Velocity Calculate
+        velocity = optimalState.speed
+        velocityTp100ms = getVelocityMpsToTp100ms(velocity, driveMotorTicks, wheelRadius, driveGearRatio ) # Get Velocity in Ticks per 100 ms
+        # Set Velocity
+        if self.motionMagic:
+            # Convert Velocity to Predicted Position
+            measuredPosition = self.driveMotor.getSelectedSensorPosition(0)
+            targetPosition = measuredPosition + ( velocityTp100ms / 5 )
+            self.driveMotor.set( ControlMode.MotionMagic, targetPosition )
+        else:
+            self.driveMotor.set( ControlMode.Velocity, velocityTp100ms )
+
+        # Angle Position Calculate
+        currentTicks = self.angleMotor.getSelectedSensorPosition(0)
+        targetTicks = getTicksFromRotation(optimalState.angle, angleSensorTicks)  # Get Optomized Target as Ticks
+        positionTicks = getContinuousInputMeasurement(currentTicks, targetTicks, angleSensorTicks)  # Correction for [-180,180)
+        # Set Angle Position
+        if self.motionMagic:
+            self.angleMotor.set( ControlMode.MotionMagic, positionTicks )
+        else:
+            self.angleMotor.set( ControlMode.Position, positionTicks )
 
     def getModulePosition(self) -> Translation2d:
         return self.modulePosition

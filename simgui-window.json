@@ -35,11 +35,11 @@
     "###/SmartDashboard/Autonomous Mode": {
       "Collapsed": "0",
       "Pos": "287,55",
-      "Size": "32,47"
+      "Size": "469,78"
     },
     "###/SmartDashboard/Field": {
       "Collapsed": "0",
-      "Pos": "558,1049",
+      "Pos": "594,1019",
       "Size": "1837,965"
     },
     "###/SmartDashboard/Mech-ArmPivot": {
@@ -52,6 +52,11 @@
       "Pos": "517,651",
       "Size": "197,101"
     },
+    "###/SmartDashboard/SwerveDrive": {
+      "Collapsed": "0",
+      "Pos": "445,641",
+      "Size": "366,134"
+    },
     "###/SmartDashboard/To Pickup": {
       "Collapsed": "0",
       "Pos": "518,521",
@@ -60,12 +65,12 @@
     "###FMS": {
       "Collapsed": "0",
       "Pos": "43,981",
-      "Size": "32,47"
+      "Size": "495,218"
     },
     "###Joysticks": {
       "Collapsed": "0",
       "Pos": "837,615",
-      "Size": "32,47"
+      "Size": "1516,392"
     },
     "###Keyboard 0 Settings": {
       "Collapsed": "0",
@@ -74,7 +79,7 @@
     },
     "###NetworkTables": {
       "Collapsed": "0",
-      "Pos": "838,61",
+      "Pos": "834,42",
       "Size": "1500,556"
     },
     "###NetworkTables Info": {
@@ -84,7 +89,7 @@
     },
     "###Other Devices": {
       "Collapsed": "0",
-      "Pos": "2454,46",
+      "Pos": "2564,49",
       "Size": "500,1789"
     },
     "###Plot <0>": {
@@ -95,17 +100,17 @@
     "###Solenoids": {
       "Collapsed": "0",
       "Pos": "311,155",
-      "Size": "32,47"
+      "Size": "296,358"
     },
     "###System Joysticks": {
       "Collapsed": "0",
       "Pos": "48,615",
-      "Size": "32,47"
+      "Size": "354,362"
     },
     "###Timing": {
       "Collapsed": "0",
       "Pos": "10,300",
-      "Size": "32,47"
+      "Size": "241,187"
     },
     "Debug##Default": {
       "Collapsed": "0",
@@ -115,7 +120,7 @@
     "Robot State": {
       "Collapsed": "0",
       "Pos": "49,66",
-      "Size": "32,47"
+      "Size": "161,159"
     }
   }
 }

@@ -1,83 +1,53 @@
-# Import Python
-import math
-
-# Import FRC
-from commands2 import Swerve4ControllerCommand
-from wpimath.controller import PIDController, ProfiledPIDControllerRadians
-from wpimath.geometry import Translation2d
-from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator, TrapezoidProfileRadians
-
-# Import Subsystems and Commands
+from commands2 import *
+from wpilib import *
+from wpimath.geometry import *
 from subsystems import *
 
-# Constants
-kMaxSpeedMetersPerSecond = 3
-kMaxAccelMetersPerSecondSq = 3
-kMaxAngularSpeedMetersPerSecond = math.pi
-kMaxAngularAccelMetersPerSecondSq = math.pi
+tolerance = 0.5
 
-x_kP = 1
-x_kI = 0
-x_kD = 0
-
-y_kP = 1
-y_kI = 0
-y_kD = 0
-
-t_kP = 1
-t_kI = 0
-t_kD = 0
-
-class DriveBalance(Swerve4ControllerCommand):
-    def __init__(self, swerveDrive:SwerveDrive):
-        ### Trajectory Information
-        # Trajectory Config
-        config = TrajectoryConfig(
-            kMaxSpeedMetersPerSecond,
-            kMaxAccelMetersPerSecondSq
-        )
-
-        trajectory = TrajectoryGenerator.generateTrajectory(
-            start=Pose2d(Translation2d(0,0),Rotation2d(0)), # Start
-            interiorWaypoints=[
-                Translation2d(1,1),
-                Translation2d(2,-1)
-            ], # Path
-            end=Pose2d(Translation2d(3,0),Rotation2d(0)), # End
-            config=config # Config
-        )
+class DriveBalance(CommandBase):
+    def __init__(self, DriveTrain:SwerveDrive) -> None:
+        # Command Base
+        super().__init__()
+        self.addRequirements( DriveTrain )
+        self.setName( "Balance" )
 
         ### PID Controllers
-        pidX = PIDController(
-            x_kP,
-            x_kI,
-            x_kD
-        )
-        pidY = PIDController(
-            y_kP,
-            y_kI,
-            y_kD
-        )
-        pidT = ProfiledPIDControllerRadians(
-            t_kP,
-            t_kI,
-            t_kD,
-            TrapezoidProfileRadians.Constraints(
-                kMaxAngularSpeedMetersPerSecond,
-                kMaxSpeedMetersPerSecond
-            )
-        )
-        
-        super().__init__(
-            trajectory=trajectory,
-            pose=swerveDrive.getPose,
-            kinematics=swerveDrive.kinematics,
-            xController=pidX,
-            yController=pidY,
-            thetaController=pidT,
-            desiredRotation=swerveDrive.getHeading,
-            output=swerveDrive.runSwerveModuleStates,
-            requirements=[swerveDrive]
-        )
-        self.setName( "DriveSCurve" )
+        self._m_controller = DriveTrain.getHolonomicPIDController()
+        self._m_xPid = self._m_controller.getXController()
+        self._m_yPid = self._m_controller.getYController()
+        self._m_tPid = self._m_controller.getThetaController()
 
+        # Globalize
+        self.__DriveTrain__ = DriveTrain
+
+    def initialize(self) -> None:
+        # Pid Controller Resets
+        self._m_xPid.reset()
+        self._m_yPid.reset()
+        self._m_tPid.reset( self.__DriveTrain__.getRobotAngle().radians() )
+    
+    def execute(self) -> None:
+        pass
+        #targetPose = self.__DriveTrain__.getRobotAngle().radians()
+        #
+        #x, y, z = self.__DriveTrain__.getGyroGravityVector()
+        #angle = Rotation2d( x, y ).degrees()
+        #vector = math.sqrt( (x*x) + (y*y) )
+        #if angle < 0.0: vector *= -1
+        #
+        #x = self._m_xPid.calculate( vector, 0 )
+        #y = self._m_yPid.calculate( 0, 0 )
+        #r = self._m_tPid.calculate( targetPose, targetPose )
+
+        #self.__DriveTrain__.runPercentageInputs( x, y, r )
+    
+    def end(self, interrupted: bool) -> None:
+        self.__DriveTrain__.stop()
+    
+    def isFinished(self) -> bool:
+        x, y, z = self.__DriveTrain__.getGyroGravityVector()
+        return abs( x ) < tolerance and abs( y ) < tolerance
+    
+    def runsWhenDisabled(self) -> bool:
+        False

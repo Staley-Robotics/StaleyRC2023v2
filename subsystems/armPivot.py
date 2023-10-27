@@ -30,22 +30,22 @@ from ntcore import *
 ### Constants
 # Module Physical Constants
 pivot_ticks:int = 4096
-pivot_manualMoveRate:int = 40 # Ticks Per 20 ms (total distance in 0.5 seconds)
+pivot_manualMoveRate:int = 500 # Ticks Per 20 ms (total distance in 0.5 seconds)
 
 # Controller Constants
-pivot_kP = 1.50
-pivot_kI = 0
-pivot_kD = 15.00
-pivot_kF = 0 # 0.065
-pivot_kError = 10
+pivot_kP = 1.75 # 1.5
+pivot_kI = 0.0005
+pivot_kD = 9.0
+pivot_kF = 0.01
+pivot_kError = 20
 
 # Position Constants
-pivot_position_min = 2358 # 7.0 degrees
+pivot_position_min = 2325 # 10.0 degrees
 pivot_position_horizontal = 2438 # 0.0 degrees
-pivot_position_max = 3433 # -87.5 degrees
+pivot_position_max = 3440 # -88.0 degrees
 
 # Motion Magic Constants
-pivot_mmMaxVelocity = 2048
+pivot_mmMaxVelocity = 8192 #2048
 pivot_mmMaxAcceleration = 2 * pivot_mmMaxVelocity # Reach Max Speed in 1/2 second
 pivot_mmSCurveSmoothing = 8 # 0-8 Motion Magic Smoothness
 
@@ -72,7 +72,7 @@ class ArmPivot(SubsystemBase):
         __motor__.configSelectedFeedbackSensor( RemoteFeedbackDevice.RemoteSensor0, 0 )
         __motor__.setSensorPhase(True)
         __motor__.setInverted(True)
-        __motor__.setNeutralMode(NeutralMode.Brake)
+        __motor__.setNeutralMode(NeutralMode.Coast)
         __motor__.selectProfileSlot(1, 0)
         __motor__.configNeutralDeadband(0.001)
 
@@ -108,7 +108,9 @@ class ArmPivot(SubsystemBase):
         self.__ntTbl__.putNumber( "CodeTarget", self.__position__ )
         self.__ntTbl__.putNumber( "Target", self.getTargetPosition() )
         self.__ntTbl__.putNumber( "Error", self.__motor__.getClosedLoopError(0) )
-        
+
+
+    def update(self):      
         # Don't Run Rest of Periodic While Disabled
         #if RobotState.isDisabled(): return None
 
@@ -118,12 +120,12 @@ class ArmPivot(SubsystemBase):
         
         # Set Motor
         self.__motor__.set(
-            ControlMode.Position, #ControlMode.MotionMagic,
-            self.__position__ #,
-            #DemandType.ArbitraryFeedForward,
-            #pivot_kF * cosineScalar
+            #ControlMode.Position, 
+            ControlMode.MotionMagic,
+            self.__position__,
+            DemandType.ArbitraryFeedForward,
+            pivot_kF * cosineScalar
         )
-
 
     ### Pivot Position Functions
     # Set Pivot Position in Sensor Units
@@ -137,7 +139,7 @@ class ArmPivot(SubsystemBase):
 
     # Move the Current Pivot Position
     def movePosition(self, input:float) -> None:
-        position = self.getPosition() - int( input * 80 )
+        position = self.getPosition() - int( input * pivot_manualMoveRate )
         self.setPosition( position )
 
     # Set Pivot Position in Degrees
@@ -171,5 +173,5 @@ class ArmPivot(SubsystemBase):
     
     # Is the Pivotr Motor at the set Position?
     def atPosition(self) -> bool: 
-        atPosition = abs( self.__motor__.getClosedLoopError() ) < pivot_kError
+        atPosition = abs( self.__position__ - self.getPosition() ) < pivot_kError
         return atPosition

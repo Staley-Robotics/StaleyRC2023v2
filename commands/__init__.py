@@ -6,6 +6,7 @@ from .ArmExtendReset import *
 from .ClawAction import *
 from .DriveBalance import *
 from .DriveByStick import *
+from .DriveForTime import *
 from .DriveLockdown import *
 from .DriveSetup import *
 from .DriveToPose import *

@@ -33,6 +33,7 @@ class ArmExtendByStick(CommandBase):
         input = self.__input__()
         input = applyDeadband( input, deadband )
         self.__extend__.movePosition( input )
+        self.__extend__.update()
 
     def end(self, interrupted:bool) -> None:
         pass

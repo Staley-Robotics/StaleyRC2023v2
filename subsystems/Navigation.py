@@ -7,7 +7,7 @@ from ntcore import *
 # from subsystems import ChargedUp
 
 class Navigation(SubsystemBase):
-    def __init__(self, con1getPov: lambda: -1, con2getPov: lambda: -1 ) -> None:
+    def __init__(self, con1getPov:typing.Callable[[],int] = lambda: -1, con2getPov:typing.Callable[[],int] = lambda: -1 ) -> None:
         super().__init__()
 
         self.__con1getPov__ = con1getPov

@@ -13,30 +13,24 @@ from pathplannerlib import PathConstraints, PathPlanner, PathPlannerTrajectory, 
 # Import Subsystems and Commands
 from subsystems import *
 
-kMaxSpeedMetersPerSecond = 3
-kMaxAccelMetersPerSecondSq = 3
-kMaxAngularSpeedMetersPerSecond = math.pi
-kMaxAngularAccelMetersPerSecondSq = math.pi
-maxAngularVelocity = 2 * math.pi
-
 class DriveToPose(CommandBase):
     _m_controller: HolonomicDriveController = None
     swerveDrive: SwerveDrive = None
     
     def __init__(self, swerveDrive:SwerveDrive, getTargetPose:typing.Callable[[], Pose2d]):
         super().__init__()
-        ### PID Controllers
-        self._m_controller = swerveDrive.getHolonomicPIDController()
-        self._m_xPid = self._m_controller.getXController()
-        self._m_yPid = self._m_controller.getYController()
-        self._m_tPid = self._m_controller.getThetaController()
-        
         self.swerveDrive = swerveDrive
         self.getTargetPose = getTargetPose
         self.addRequirements( swerveDrive )
         self.setName( "DriveToPose" )
 
     def initialize(self):
+        ### PID Controllers
+        self._m_controller = self.swerveDrive.getHolonomicPIDController()
+        self._m_xPid = self._m_controller.getXController()
+        self._m_yPid = self._m_controller.getYController()
+        self._m_tPid = self._m_controller.getThetaController()
+        
         # Pid Controller Resets
         self._m_xPid.reset()
         self._m_yPid.reset()
@@ -62,7 +56,8 @@ class DriveToPose(CommandBase):
         #self.swerveDrive.runChassisSpeeds( speeds )
 
     def end(self, interrupted:bool) -> None:
-        self.swerveDrive.stop()
+        #self.swerveDrive.stop()
+        pass
 
     def isFinished(self) -> bool:
         xDone = self._m_xPid.atSetpoint()

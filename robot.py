@@ -13,9 +13,13 @@ class Robot(TimedRobot):
     m_autonomousCommand:Command = None
     m_robotContainer:RobotContainer = None
 
+    __calibrate__ = True
+
     # Initialize Robot
     def robotInit(self):
         self.m_robotContainer = RobotContainer()
+        self.__calibrateCmd__ = self.m_robotContainer.getCalibrate()
+        
         hal.report( tResourceType.kResourceType_Framework, tInstances.kFramework_RobotBuilder )
 
     # Run this command every 20 ms
@@ -24,6 +28,10 @@ class Robot(TimedRobot):
 
     # Autonomous Robot Functions
     def autonomousInit(self):
+        if self.__calibrate__:
+            self.__calibrateCmd__.schedule()
+            self.__calibrate__ = False
+
         self.m_autonomousCommand = self.m_robotContainer.getAutonomousCommand()
 
         if ( self.m_autonomousCommand != None ):
@@ -34,7 +42,11 @@ class Robot(TimedRobot):
         self.m_autonomousCommand.cancel()
 
     # Teleop Robot Functions
-    def teleopInit(self): pass
+    def teleopInit(self):
+        if self.__calibrate__:
+            self.__calibrateCmd__.schedule()
+            self.__calibrate__ = False
+
     def teleopPeriodic(self): pass
     def teleopExit(self): pass
 

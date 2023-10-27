@@ -11,6 +11,8 @@ from sequences import *
 from autonomous.AutoSample1 import AutoSample1
 from autonomous.LeftBasic import LeftBasic
 from autonomous.RightBasic import RightBasic
+from autonomous.TimeBasedLeft import TimeBasedLeft
+from autonomous.TimeBasedRight import TimeBasedRight
 
 # Define Robot Container Class
 class RobotContainer:
@@ -43,6 +45,7 @@ class RobotContainer:
         SmartDashboard.putData(key="ExtendReset", data=ArmExtendReset(self.armExtend))
         SmartDashboard.putData(key="Pickup",      data=DriveToPickup(self.swerveDrive, self.navigation))
         SmartDashboard.putData(key="Dropoff",     data=DriveToDropoff(self.swerveDrive, self.navigation))
+        SmartDashboard.putData(key="Balance",     data=DriveBalance(self.swerveDrive))
 
         # Configure Default Commands
         self.configureDefaultCommands()
@@ -54,6 +57,8 @@ class RobotContainer:
         self.m_chooser = SendableChooser()
         self.m_chooser.setDefaultOption(name="None", object=commands2.cmd.nothing())
         self.m_chooser.addOption(name="Sample 1", object=AutoSample1(self.swerveDrive, self.armPivot, self.claw))
+        self.m_chooser.addOption(name="Basic Left", object=TimeBasedLeft(self.swerveDrive, self.armPivot, self.armExtend, self.claw) )
+        self.m_chooser.addOption(name="Basic Right", object=TimeBasedRight(self.swerveDrive, self.armPivot, self.armExtend, self.claw) )
         self.m_chooser.addOption(name="Blue Left Place and Exit", object=LeftBasic(self.swerveDrive, self.armPivot, self.armExtend, self.claw))
         self.m_chooser.addOption(name="Blue Right Place and Exit", object=RightBasic(self.swerveDrive, self.armPivot, self.armExtend, self.claw))
         self.m_chooser.addOption(name="Red Left Place and Exit", object=RightBasic(self.swerveDrive, self.armPivot, self.armExtend, self.claw, True))
@@ -91,21 +96,28 @@ class RobotContainer:
     def configureButtonBindings(self):
         #### Example: https://github.com/robotpy/examples/blob/main/commands-v2/hatchbot-inlined/robotcontainer.py
         # Driver 1
-        self.getDriver1().start().toggleOnTrue( ToggleFieldRelative(self.swerveDrive) )
         self.getDriver1().back().toggleOnTrue( ToggleMotionMagic(self.swerveDrive) )
-        self.getDriver1().rightBumper().toggleOnTrue( ToggleHalfSpeed(self.swerveDrive) )
-        #self.getDriver1().leftBumper().toggleOnTrue( DriveToPose(self.swerveDrive, lambda: Pose2d( Translation2d(2.0, 3), Rotation2d(0).fromDegrees(180))) )
+        self.getDriver1().start().toggleOnTrue( ToggleFieldRelative(self.swerveDrive) )
         self.getDriver1().leftBumper().toggleOnTrue( NavigationToggleZone(self.navigation) )
+        self.getDriver1().rightBumper().toggleOnTrue( ToggleHalfSpeed(self.swerveDrive) )
         self.getDriver1().X().whileTrue( DriveToPickup(self.swerveDrive, self.navigation) )
         self.getDriver1().Y().whileTrue( DriveToDropoff(self.swerveDrive, self.navigation) )
-
+        self.getDriver1().A().whileTrue( DriveLockdown(self.swerveDrive) )
+        self.getDriver1().B().whileTrue( DriveBalance(self.swerveDrive) )
         commands2.button.POVButton( self.getDriver1(),   0 ).whenPressed( commands2.cmd.nothing() )
         commands2.button.POVButton( self.getDriver1(), 180 ).whenPressed( commands2.cmd.nothing() )
         commands2.button.POVButton( self.getDriver1(), 270 ).whenPressed( commands2.cmd.nothing() )
         commands2.button.POVButton( self.getDriver1(),  90 ).whenPressed( commands2.cmd.nothing() )
 
         # Driver 2
+        #self.getDriver2().back().toggleOnTrue( ToggleMotionMagic(self.swerveDrive) )
+        #self.getDriver2().start().toggleOnTrue( ToggleFieldRelative(self.swerveDrive) )
+        #self.getDriver2().leftBumper().toggleOnTrue( NavigationToggleZone(self.navigation) )
+        #self.getDriver2().rightBumper().toggleOnTrue( ToggleHalfSpeed(self.swerveDrive) )
+        #self.getDriver2().X().whileTrue( commands2.cmd.nothing() )
+        #self.getDriver2().Y().whileTrue( commands2.cmd.nothing() )
         self.getDriver2().A().toggleOnTrue( ClawAction(self.claw, ClawAction.Action.kToggle) )
+        self.getDriver2().B().toggleOnTrue( ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Position.pickup) )
         commands2.button.POVButton( self.getDriver2(),   0 ).whenPressed( commands2.cmd.nothing() )
         commands2.button.POVButton( self.getDriver2(), 180 ).whenPressed( commands2.cmd.nothing() )
         commands2.button.POVButton( self.getDriver2(), 270 ).whenPressed( commands2.cmd.nothing() )
@@ -121,6 +133,9 @@ class RobotContainer:
     # Return Autonomous Command
     def getAutonomousCommand(self) -> Command:
         return self.m_chooser.getSelected()
+    
+    def getCalibrate(self) -> Command:
+        return ArmExtendReset( self.armExtend )
 
 # Create RobotContainer when importing package
 #m_robotContainer = RobotContainer()
