@@ -33,9 +33,9 @@ driveGearRatio = 1/7.36 #Flipped Pulley (5.50, 6.55, 7.80), Flipped Gear (6.75, 
 wheelRadius = 0.0508
 
 # Controller Constants
-drive_kP = 0.15
-drive_kI = 0
-drive_kD = 0
+drive_kP = 0.04
+drive_kI = 0.0
+drive_kD = 1.0
 drive_kF = 0.065
 drive_kSlotIdx = 0
 drive_mmMaxVelocity = 20480
@@ -111,7 +111,7 @@ class SwerveModule(SubsystemBase):
         # Drive Integrated PID Controller
         self.driveMotor.config_kP( drive_kSlotIdx, drive_kP )
         self.driveMotor.config_kI( drive_kSlotIdx, drive_kI )
-        self.driveMotor.config_kD( drive_kSlotIdx, drive_kP )
+        self.driveMotor.config_kD( drive_kSlotIdx, drive_kD )
         self.driveMotor.config_kF( drive_kSlotIdx, drive_kF )
         self.driveMotor.selectProfileSlot(drive_kSlotIdx, 0)
 

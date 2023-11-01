@@ -14,16 +14,16 @@ from commands import *
 from util import *
 
 
-class RightBasic(SequentialCommandGroup):
+class LeftBasicHigh(SequentialCommandGroup):
     def __init__(self, swerveDrive:SwerveDrive, armPivot:ArmPivot, armExtend:ArmExtend, claw:Claw, redAlliance:bool = False):
         super().__init__()
-        self.setName( "RightBasic" )
+        self.setName( "LeftBasic" )
         #self.addRequirements( [swerveDrive, armPivot, armExtend, claw] )
         
-        StartPose = ChargedUp.getPose( "DropoffRobotMiddle", "Dropoff8", 180, redAlliance )
-        PlacePose = ChargedUp.getPose( "DropoffRobotEdge", "Dropoff8", 180, redAlliance )
-        StepOutPose = ChargedUp.getPose( "DropoffRobotMiddle", "SafeExitRight", 180, redAlliance )
-        ExitPose = ChargedUp.getPose( "SafeExit", "SafeExitRight", 180, redAlliance )
+        StartPose = ChargedUp.getPose( "DropoffRobotMiddle", "Dropoff2", 180, redAlliance )
+        PlacePose = ChargedUp.getPose( "DropoffRobotEdge", "Dropoff2", 180, redAlliance )
+        StepOutPose = ChargedUp.getPose( "DropoffRobotMiddle", "SafeExitLeft", 180, redAlliance )
+        ExitPose = ChargedUp.getPose( "SafeExit", "SafeExitLeft", 180, redAlliance )
 
         self.addCommands(
             ParallelCommandGroup(

@@ -51,7 +51,7 @@ class ClawAction(CommandBase):
 
     def isFinished(self) -> bool:
         time = self.__timer__.get()
-        return self.__noWait__ or time > 0.4
+        return self.__noWait__ or time > 0.6
     
     def runsWhenDisabled(self) -> bool:
         return False

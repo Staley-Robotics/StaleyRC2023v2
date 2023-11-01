@@ -31,14 +31,14 @@ extend_kP = 0.30
 extend_kI = 0
 extend_kD = 0
 extend_kF = 0 #0.065
-extend_kError = 10
+extend_kError = 300
 
 # Position Constants
 extend_position_min = 0
 extend_position_max = 24400 #22000
 extend_position_start = 5
 
-extend_length_inches = 16.6 #15.0
+extend_length_inches = 16.5 #15.0
 extend_ticksPerInch = ( extend_position_max - extend_position_min ) / extend_length_inches
 
 # Motion Magic Constants

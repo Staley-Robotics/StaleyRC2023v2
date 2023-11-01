@@ -28,10 +28,6 @@ class Robot(TimedRobot):
 
     # Autonomous Robot Functions
     def autonomousInit(self):
-        if self.__calibrate__:
-            self.__calibrateCmd__.schedule()
-            self.__calibrate__ = False
-
         self.m_autonomousCommand = self.m_robotContainer.getAutonomousCommand()
 
         if ( self.m_autonomousCommand != None ):
@@ -43,9 +39,7 @@ class Robot(TimedRobot):
 
     # Teleop Robot Functions
     def teleopInit(self):
-        if self.__calibrate__:
-            self.__calibrateCmd__.schedule()
-            self.__calibrate__ = False
+        self.__calibrateCmd__.schedule()
 
     def teleopPeriodic(self): pass
     def teleopExit(self): pass

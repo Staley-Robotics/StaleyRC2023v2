@@ -17,7 +17,7 @@ from subsystems.SwerveDrive import SwerveDrive
 # SwerveDrive Module Inputs
 driveDeadband = 0.04 # Deadband (Sensitivity towards Dead 0 on joystick)
 #slrValue = 2 # Slew Rate Limiter (Sensitivity to how fast the joysticks bounds back to 0)
-halfSpeedMultiplier = 0.33
+halfSpeedMultiplier = 0.40
 
 # Default Drive Command Class
 class DriveByStick(CommandBase):

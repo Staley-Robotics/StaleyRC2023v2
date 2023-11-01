@@ -13,6 +13,9 @@ from autonomous.LeftBasic import LeftBasic
 from autonomous.RightBasic import RightBasic
 from autonomous.TimeBasedLeft import TimeBasedLeft
 from autonomous.TimeBasedRight import TimeBasedRight
+from autonomous.TimeBasedLeftHigh import TimeBasedLeftHigh
+from autonomous.TimeBasedRightHigh import TimeBasedRightHigh
+from autonomous.TimeBasedMiddleHigh import TimeBasedMiddleHigh
 
 # Define Robot Container Class
 class RobotContainer:
@@ -58,11 +61,14 @@ class RobotContainer:
         self.m_chooser.setDefaultOption(name="None", object=commands2.cmd.nothing())
         self.m_chooser.addOption(name="Sample 1", object=AutoSample1(self.swerveDrive, self.armPivot, self.claw))
         self.m_chooser.addOption(name="Basic Left", object=TimeBasedLeft(self.swerveDrive, self.armPivot, self.armExtend, self.claw) )
+        self.m_chooser.addOption(name="Basic Left High", object=TimeBasedLeftHigh(self.swerveDrive, self.armPivot, self.armExtend, self.claw) )
         self.m_chooser.addOption(name="Basic Right", object=TimeBasedRight(self.swerveDrive, self.armPivot, self.armExtend, self.claw) )
+        self.m_chooser.addOption(name="Basic Right High", object=TimeBasedRightHigh(self.swerveDrive, self.armPivot, self.armExtend, self.claw) )
         self.m_chooser.addOption(name="Blue Left Place and Exit", object=LeftBasic(self.swerveDrive, self.armPivot, self.armExtend, self.claw))
         self.m_chooser.addOption(name="Blue Right Place and Exit", object=RightBasic(self.swerveDrive, self.armPivot, self.armExtend, self.claw))
         self.m_chooser.addOption(name="Red Left Place and Exit", object=RightBasic(self.swerveDrive, self.armPivot, self.armExtend, self.claw, True))
         self.m_chooser.addOption(name="Red Right Place and Exit", object=LeftBasic(self.swerveDrive, self.armPivot, self.armExtend, self.claw, True))
+        self.m_chooser.addOption(name="Basic Middle High Exit", object=TimeBasedMiddleHigh(self.swerveDrive, self.armPivot, self.armExtend, self.claw))
         SmartDashboard.putData(key="Autonomous Mode", data=self.m_chooser) # Add Autonomous Chooser to Dashboard
 
     def configureDefaultCommands(self):
@@ -74,7 +80,7 @@ class RobotContainer:
                 velocityY = lambda: -self.getDriver1().getLeftX(),
                 holonomicX = lambda: -self.getDriver1().getRightY(),
                 holonomicY = lambda: -self.getDriver1().getRightX(),
-                rotate = lambda: self.getDriver1().getLeftTriggerAxis() - self.getDriver1().getRightTriggerAxis() #-self.getDriver1().getRightX()
+                rotate = lambda: 0 #self.getDriver1().getLeftTriggerAxis() - self.getDriver1().getRightTriggerAxis() #-self.getDriver1().getRightX()
             )
         )
 
@@ -112,11 +118,12 @@ class RobotContainer:
         # Driver 2
         #self.getDriver2().back().toggleOnTrue( ToggleMotionMagic(self.swerveDrive) )
         #self.getDriver2().start().toggleOnTrue( ToggleFieldRelative(self.swerveDrive) )
-        #self.getDriver2().leftBumper().toggleOnTrue( NavigationToggleZone(self.navigation) )
+        self.getDriver2().leftBumper().toggleOnTrue( NavigationToggleZone(self.navigation) )
         #self.getDriver2().rightBumper().toggleOnTrue( ToggleHalfSpeed(self.swerveDrive) )
         #self.getDriver2().X().whileTrue( commands2.cmd.nothing() )
-        #self.getDriver2().Y().whileTrue( commands2.cmd.nothing() )
-        self.getDriver2().A().toggleOnTrue( ClawAction(self.claw, ClawAction.Action.kToggle) )
+        self.getDriver2().Y().toggleOnTrue( ArmExtendReset( self.armExtend ) )
+        #self.getDriver2().A().toggleOnTrue( ClawAction(self.claw, ClawAction.Action.kToggle) )
+        self.getDriver2().A().whileTrue( ArmFluid(self.armPivot, self.armExtend, self.claw) )
         self.getDriver2().B().toggleOnTrue( ArmPivotPosition(self.armPivot, lambda: ArmPivotPosition.Position.pickup) )
         commands2.button.POVButton( self.getDriver2(),   0 ).whenPressed( commands2.cmd.nothing() )
         commands2.button.POVButton( self.getDriver2(), 180 ).whenPressed( commands2.cmd.nothing() )

@@ -35,7 +35,7 @@ from .SwerveModule import SwerveModule
 gyroStartHeading = -180.0
 
 # SwerveDrive Maximum Speeds
-maxVelocity = 3.75
+maxVelocity = 3.70
 maxAngularVelocity = 2 * math.pi
 
 # Trajectory Maximums
@@ -132,7 +132,7 @@ class SwerveDrive(SubsystemBase):
             kMaxAngularSpeedMetersPerSecond,
             kMaxAngularAccelMetersPerSecondSq
         )
-        tPid = ProfiledPIDControllerRadians( 2, 0, 0, tPidConstraints )
+        tPid = ProfiledPIDControllerRadians( 1, 0, 0, tPidConstraints )
         tPid.enableContinuousInput( -math.pi, math.pi )
         tPid.setTolerance( 0.00872 ) #436 )
         tPid.reset( self.getRobotAngle().radians() )
@@ -183,6 +183,8 @@ class SwerveDrive(SubsystemBase):
             [ poseX, poseY, poseR ]
         )
 
+    def simulationPeriodic(self) -> None:
+        pass
 
     ### Drive Based Functions
     # Stop Drivetrain
@@ -244,7 +246,7 @@ class SwerveDrive(SubsystemBase):
 
     
     ### Run SwerveDrive Functions
-    def runPercentageInputs(self, x:float = 0.0, y:float = 0.0, r:float = 0.0) -> ChassisSpeeds:
+    def runPercentageInputs(self, x:float = 0.0, y:float = 0.0, r:float = 0.0) -> None:
         veloc_x = x * maxVelocity
         veloc_y = y * maxVelocity
         veloc_r = r * maxAngularVelocity

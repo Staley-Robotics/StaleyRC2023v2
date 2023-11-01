@@ -47,8 +47,9 @@ class ArmExtendReset(CommandBase):
     
     def end(self, interrupted:bool) -> None:
         self.timer.stop()
-        if not interrupted:
-            self.armExtend.resetPosition()
+        #if not interrupted:
+        self.armExtend.resetPosition()
+        self.armExtend.update()
 
     def isFinished(self) -> bool:
         if self.timer.get() < timerExpiryThreshold:

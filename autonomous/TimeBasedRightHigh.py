@@ -13,7 +13,7 @@ from subsystems import *
 from commands import *
 
 
-class TimeBasedRight(SequentialCommandGroup):
+class TimeBasedRightHigh(SequentialCommandGroup):
     def __init__(self, swerveDrive: SwerveDrive, armPivot: ArmPivot, armExtend: ArmExtend, claw: Claw):
         super().__init__()
         self.setName("LeftBasic")
@@ -21,21 +21,33 @@ class TimeBasedRight(SequentialCommandGroup):
 
         self.addCommands(ArmExtendReset(armExtend))
         self.addCommands(ClawClose(claw))
-        self.addCommands(ArmPivotPosition(armPivot, lambda: ArmPivotPosition.Position.dropMiddle))
-        self.addCommands(DriveForTime(swerveDrive, -0.10, 0.0, 0.0, 0.3, False))
-        self.addCommands(DriveForTime(swerveDrive, -0.25, 0.0, 0.0, 0.3, False))
-        self.addCommands(DriveForTime(swerveDrive, -0.10, 0.0, 0.0, 0.3, True))
-        self.addCommands(ArmPivotPosition(armPivot, lambda: ArmPivotPosition.Position.dropMiddleRelease))
+        self.addCommands(ArmPivotPosition(armPivot, lambda: ArmPivotPosition.Position.dropTop))
+        self.addCommands(
+            ParallelCommandGroup(
+                SequentialCommandGroup(
+                    DriveForTime(swerveDrive, -0.10, 0.0, 0.0, 0.3, False),
+                    DriveForTime(swerveDrive, -0.25, 0.0, 0.0, 0.3, False),
+                    DriveForTime(swerveDrive, -0.10, 0.0, 0.0, 0.3, True)
+                ),
+                ArmExtendPosition( armExtend, lambda: ArmExtendPosition.Position.maxValue )
+            )
+        )
+        
+        self.addCommands(ArmPivotPosition(armPivot, lambda: ArmPivotPosition.Position.dropTopRelease))
         self.addCommands(ClawOpen(claw))
-        self.addCommands(ArmPivotPosition(armPivot, lambda: ArmPivotPosition.Position.dropMiddle))
+        self.addCommands(ArmPivotPosition(armPivot, lambda: ArmPivotPosition.Position.dropTop))
+        
         self.addCommands(DriveForTime(swerveDrive, 0.10, -0.10, 0.0, 0.25, False))
-        self.addCommands(DriveForTime(swerveDrive, 0.25, -0.25, 0.0, 1.00, False))
+        self.addCommands(DriveForTime(swerveDrive, 0.25, -0.25, 0.0, 0.75, False))
         self.addCommands(DriveForTime(swerveDrive, 0.10, -0.10, 0.0, 0.25, True))
         self.addCommands(ClawClose(claw))
-        self.addCommands(ArmPivotPosition(armPivot, lambda: ArmPivotPosition.Position.down))
         self.addCommands(
-            DriveForTime(swerveDrive, 1.0, 0.0, 0.0, 1.0, False)
+            SequentialCommandGroup(
+                ArmExtendReset(armExtend),
+                ArmPivotPosition(armPivot, lambda: ArmPivotPosition.Position.down)
+            )
         )
+        self.addCommands(DriveForTime(swerveDrive, 1.0, 0.0, 0.0, 1.0, False))
         self.addCommands(DriveForTime(swerveDrive, 0.75, 0.0, 0.0, 0.4, False))
         self.addCommands(DriveForTime(swerveDrive, 0.50, 0.0, 0.0, 0.4, False)) 
         self.addCommands(DriveForTime(swerveDrive, 0.25, 0.0, 0.0, 0.4, False))  
